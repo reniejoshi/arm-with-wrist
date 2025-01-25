@@ -29,6 +29,27 @@ deploy {
                 frcJava(getArtifactTypeClass('FRCJavaArtifact')) {
                 }
 
+                robotCommandfrcJava(getArtifactTypeClass('RobotCommandArtifact')) {
+                    postdeploy << {
+                        File file = file("src/main/java/org/tahomarobotics/robot/whoami/Identity.java")
+                        def matcher = file.text =~ /\b(\w+)\s*\(\s*"([0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5})"\s*\)/
+
+                        def ids = [:]
+                        matcher.eachWithIndex { m, i -> ids[m[2]] = [i: i, name: m[1]] }
+
+                        def mac = execute("ip a | grep -m 1 'link/ether' | awk '{print \$2}'").result.trim()
+                        println "RoboRIO MAC address: $mac"
+
+                        def id = ids.get(mac)
+                        if (id != null) {
+                            println "Recognized MAC address for ${id.name} ($mac), deploying as such!"
+                            execute "echo ${id.i} >> /home/lvuser/robotCommand"
+                        } else {
+                            throw new GradleException("Unrecognized MAC address, please implement identity for $mac!")
+                        }
+                    }
+                }
+
                 // Static files artifact
                 frcStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
                     files = project.fileTree('src/main/deploy')
@@ -104,3 +125,4 @@ wpi.java.configureTestTasks(test)
 tasks.withType(JavaCompile) {
     options.compilerArgs.add '-XDstringConcat=inline'
 }
+
