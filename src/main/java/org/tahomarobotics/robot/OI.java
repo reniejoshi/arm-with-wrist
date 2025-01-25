@@ -41,7 +41,7 @@ public class OI extends SubsystemIF {
     // Bindings
 
     public void configureBindings() {
-        driveController.a().onTrue(Commands.runOnce(chassis::zeroHeading));
+        driveController.a().onTrue(Commands.runOnce(chassis::orientToZeroHeading));
     }
 
     public void setDefaultCommands() {

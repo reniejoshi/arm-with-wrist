@@ -16,7 +16,7 @@ public class ChassisConstants {
     /** Width-wise distance between wheel centers in <strong>meters</strong> */
     private static final double TRACK_WIDTH = 0.5816;
     /** Length-wise distance between wheel centers in <strong>meters</strong> */
-    private static final double WHEELBASE = 0.8194;
+    private static final double WHEELBASE = 0.5816;
 
     private static final double HALF_TRACK_WIDTH = TRACK_WIDTH / 2;
     private static final double HALF_WHEELBASE = WHEELBASE / 2;

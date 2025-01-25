@@ -27,6 +27,7 @@ deploy {
                 // getTargetTypeClass is a shortcut to get the class type using a string
 
                 frcJava(getArtifactTypeClass('FRCJavaArtifact')) {
+                    jvmArgs.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005")
                 }
 
                 robotCommandfrcJava(getArtifactTypeClass('RobotCommandArtifact')) {
@@ -69,6 +70,12 @@ wpi.java.debugJni = false
 // Set this to true to enable desktop support.
 def includeDesktopSupport = false
 
+repositories {
+    maven {
+        url "file://${projectDir}/libs"
+    }
+}
+
 // Defining my dependencies. In this case, WPILib (+ friends), and vendor libraries.
 // Also defines JUnit 5.
 dependencies {
@@ -92,6 +99,8 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    testImplementation 'commons-io:commons-io:2.18.0'
 
     implementation 'org.tinylog:tinylog-api:2.7.0'
     implementation 'org.tinylog:tinylog-impl:2.7.0'

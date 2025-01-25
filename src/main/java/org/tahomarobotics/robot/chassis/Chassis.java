@@ -5,15 +5,13 @@ import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import edu.wpi.first.epilogue.Logged;
-import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.kinematics.SwerveModulePosition;
-import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.kinematics.*;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -28,10 +26,14 @@ import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.chassis.commands.AlignSwerveCommand;
 import org.tahomarobotics.robot.util.CalibrationData;
 import org.tahomarobotics.robot.util.SubsystemIF;
+import org.tahomarobotics.robot.util.swerve.SwerveDrivePoseEstimatorDiff;
+import org.tahomarobotics.robot.vision.AprilTagCamera;
+import org.tinylog.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @Logged(strategy = Logged.Strategy.OPT_IN)
 public class Chassis extends SubsystemIF {
@@ -58,6 +60,9 @@ public class Chassis extends SubsystemIF {
     private final StatusSignal<AngularVelocity> yawVelocity = pigeon.getAngularVelocityZWorld();
 
     @Logged
+    private boolean isUsingHeadingFallback = false;
+
+    @Logged
     public record ValidYaw(Rotation2d yaw, boolean valid) {}
 
     // State
@@ -65,21 +70,18 @@ public class Chassis extends SubsystemIF {
     @Logged
     private ChassisSpeeds targetSpeeds = new ChassisSpeeds();
 
-    @Logged
     private Rotation2d heading = new Rotation2d();
     private SwerveModulePosition[] lastModulePosition;
 
     @Logged
-    private final CalibrationData<Double[]> swerveCalibration;
-
-    @Logged
     private final boolean isFieldCentric = true;
+    private final CalibrationData<Double[]> swerveCalibration;
     private final Field2d fieldPose = new Field2d();
 
     // Models
 
     private final SwerveDriveKinematics kinematics;
-    private final SwerveDrivePoseEstimator poseEstimator;
+    private final SwerveDrivePoseEstimatorDiff poseEstimator;
 
     private final SwerveDriveLimiter accelerationLimiter;
 
@@ -112,11 +114,10 @@ public class Chassis extends SubsystemIF {
 
         lastModulePosition = getSwerveModulePositions();
 
-        poseEstimator = new SwerveDrivePoseEstimator(
+        poseEstimator = new SwerveDrivePoseEstimatorDiff(
             kinematics,
-            new Rotation2d(),
-            getSwerveModulePositions(),
-            new Pose2d(0.0, 0.0, new Rotation2d(0.0))
+            new SwerveDriveOdometry(kinematics, new Rotation2d(), getSwerveModulePositions(), new Pose2d()),
+            VecBuilder.fill(0.02, 0.02, 0.02) // TODO: Verify
         );
 
         accelerationLimiter = new SwerveDriveLimiter(getSwerveModuleStates(), ChassisConstants.ACCELERATION_LIMIT);
@@ -132,14 +133,11 @@ public class Chassis extends SubsystemIF {
     @Override
     public SubsystemIF initialize() {
         SmartDashboard.putData("AlignSwerve", new AlignSwerveCommand());
-        zeroHeading();
+        pigeon.setYaw(0);
 
         var gyro = getYaw().yaw;
         var modules = getSwerveModulePositions();
         synchronized (poseEstimator) {
-            //changed SwerveDriveWheelPositions to passing in an array of the module positions
-            //because SwerveDriveWheelPositions was just deleted in 2025.1.1 beta
-            //if that broke something blame me :(
             poseEstimator.resetPosition(gyro, modules, new Pose2d());
         }
 
@@ -166,10 +164,30 @@ public class Chassis extends SubsystemIF {
 
     // Getters
 
-    @Logged(name = "pose2d")
+    @Logged(name = "pose")
     public Pose2d getPose() {
         synchronized (poseEstimator) {
             return poseEstimator.getEstimatedPosition();
+        }
+    }
+
+    /**
+     * Returns the estimated pose at the supplied timestamp.
+     *
+     * @param timestamp Timestamp to sample
+     *
+     * @return The sampled pose
+     */
+    public Optional<Pose2d> getPoseAtTimestamp(double timestamp) {
+        synchronized (poseEstimator) {
+            return poseEstimator.sampleAt(timestamp);
+        }
+    }
+
+    @Logged(name = "rawPose")
+    public Pose2d getRawPose() {
+        synchronized (poseEstimator) {
+            return poseEstimator.getRawPose();
         }
     }
 
@@ -192,6 +210,11 @@ public class Chassis extends SubsystemIF {
         boolean valid = BaseStatusSignal.refreshAll(yaw, yawVelocity).equals(StatusCode.OK);
         return new ValidYaw(
             Rotation2d.fromDegrees(BaseStatusSignal.getLatencyCompensatedValueAsDouble(yaw, yawVelocity)), valid);
+    }
+
+    @Logged(name = "heading")
+    public Rotation2d getHeading() {
+        return heading;
     }
 
     // Setters
@@ -218,8 +241,18 @@ public class Chassis extends SubsystemIF {
         }
     }
 
-    public void zeroHeading() {
-        pigeon.setYaw(0);
+    public void resetOdometry(Pose2d pose) {
+        var modules = getSwerveModulePositions();
+        synchronized (poseEstimator) {
+            poseEstimator.resetPosition(getHeading(), modules, pose);
+        }
+        Logger.warn("Reset Pose: {}", pose);
+    }
+
+    public void orientToZeroHeading() {
+        Rotation2d heading = new Rotation2d(
+            DriverStation.getAlliance().orElse(null) == DriverStation.Alliance.Blue ? 0.0 : Math.PI);
+        resetOdometry(new Pose2d(getPose().getTranslation(), heading));
     }
 
     // Odometry
@@ -261,6 +294,7 @@ public class Chassis extends SubsystemIF {
 
         synchronized (pigeon) {
             var validYaw = getYaw();
+            isUsingHeadingFallback = validYaw.valid();
 
             if (validYaw.valid()) { // If pigeon yaw is valid, accept it as the real value
                 heading = validYaw.yaw();
@@ -269,11 +303,23 @@ public class Chassis extends SubsystemIF {
                 Twist2d twist = kinematics.toTwist2d(deltas);
                 heading = heading.plus(new Rotation2d(twist.dtheta));
             }
+
+            heading = new Rotation2d(MathUtil.angleModulus(heading.getRadians()));
         }
 
         lastModulePosition = Arrays.copyOf(positions, positions.length);
         synchronized (poseEstimator) {
             poseEstimator.update(heading, positions);
+        }
+    }
+
+    public void processVisionUpdate(AprilTagCamera.EstimatedRobotPose estimatedRobotPose) {
+        synchronized (poseEstimator) {
+            poseEstimator.addVisionMeasurement(
+                estimatedRobotPose.pose,
+                estimatedRobotPose.timestamp,
+                estimatedRobotPose.stdDevs
+            );
         }
     }
 

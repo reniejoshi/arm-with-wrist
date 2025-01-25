@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>org.photonvision</groupId>
+  <artifactId>photontargeting-cpp</artifactId>
+  <versioning>
+    <latest>dev-v2024.3.0-345-gd0894f69</latest>
+    <release>dev-v2024.3.0-345-gd0894f69</release>
+    <versions>
+      <version>dev-v2024.3.0-345-gd0894f69</version>
+    </versions>
+    <lastUpdated>20250123223156</lastUpdated>
+  </versioning>
+</metadata>
