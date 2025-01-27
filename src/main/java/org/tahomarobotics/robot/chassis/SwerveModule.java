@@ -103,8 +103,8 @@ public class SwerveModule {
         driveVelocity = driveMotor.getVelocity();
         driveAcceleration = driveMotor.getAcceleration();
 
-        steerPosition = steerEncoder.getPosition();
-        steerVelocity = steerEncoder.getVelocity();
+        steerPosition = steerMotor.getPosition();
+        steerVelocity = steerMotor.getVelocity();
 
         driveCurrent = driveMotor.getSupplyCurrent();
         steerCurrent = steerMotor.getSupplyCurrent();
@@ -115,9 +115,14 @@ public class SwerveModule {
             driveRotorPosition,
             driveVelocity,
             driveAcceleration,
+            steerPosition,
             steerVelocity,
             driveCurrent,
-            steerCurrent
+            steerCurrent,
+            
+            // Used for fusing the steer motor's position and velocity
+            steerEncoder.getPosition(),
+            steerEncoder.getVelocity()
         );
         ParentDevice.optimizeBusUtilizationForAll(driveMotor, steerMotor, steerEncoder);
     }
