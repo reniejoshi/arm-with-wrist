@@ -40,8 +40,7 @@ public class OI extends SubsystemIF {
 
     // -- Controllers --
 
-    private final CommandXboxController driveController = new CommandXboxController(0);
-    private final CommandXboxController manipController = new CommandXboxController(1);
+    private final CommandXboxController controller = new CommandXboxController(0);
 
     // -- Initialization --
 
@@ -60,17 +59,23 @@ public class OI extends SubsystemIF {
     // -- Bindings --
 
     public void configureBindings() {
-        driveController.povDownLeft().onTrue(Commands.runOnce(chassis::orientToZeroHeading));
+        // Chassis
 
-        manipController.povUp().onTrue(Commands.runOnce(
+        controller.povDown().onTrue(Commands.runOnce(chassis::orientToZeroHeading));
+
+        // Elevator
+
+        // TODO: Temporary Controls
+
+        controller.y().onTrue(Commands.runOnce(
             () -> elevator.setElevatorHeight(ElevatorConstants.ELEVATOR_HIGH_POSE)
         ));
 
-        manipController.povRight().onTrue(Commands.runOnce(
+        controller.b().onTrue(Commands.runOnce(
             () -> elevator.setElevatorHeight(ElevatorConstants.ELEVATOR_MID_POSE)
         ));
 
-        manipController.povDown().onTrue(Commands.runOnce(
+        controller.a().onTrue(Commands.runOnce(
             () -> elevator.setElevatorHeight(ElevatorConstants.ELEVATOR_LOW_POSE)
         ));
     }
@@ -78,25 +83,25 @@ public class OI extends SubsystemIF {
     public void setDefaultCommands() {
         chassis.setDefaultCommand(ChassisCommands.createTeleOpDriveCommand(
             chassis,
-            this::getDriveLeftY, this::getDriveLeftX, this::getDriveRightX
+            this::getLeftY, this::getLeftX, this::getRightX
         ));
     }
 
     // -- Inputs --
 
-    @Logged(name = "Controllers/Drive/LeftX")
-    public double getDriveLeftX() {
-        return -desensitizePowerBased(driveController.getLeftX(), TRANSLATIONAL_SENSITIVITY);
+    @Logged(name = "Controller/LeftX")
+    public double getLeftX() {
+        return -desensitizePowerBased(controller.getLeftX(), TRANSLATIONAL_SENSITIVITY);
     }
 
-    @Logged(name = "Controllers/Drive/LeftY")
-    public double getDriveLeftY() {
-        return -desensitizePowerBased(driveController.getLeftY(), TRANSLATIONAL_SENSITIVITY);
+    @Logged(name = "Controller/LeftY")
+    public double getLeftY() {
+        return -desensitizePowerBased(controller.getLeftY(), TRANSLATIONAL_SENSITIVITY);
     }
 
-    @Logged(name = "Controllers/Drive/RightX")
-    public double getDriveRightX() {
-        return -desensitizePowerBased(driveController.getRightX(), ROTATIONAL_SENSITIVITY);
+    @Logged(name = "Controller/RightX")
+    public double getRightX() {
+        return -desensitizePowerBased(controller.getRightX(), ROTATIONAL_SENSITIVITY);
     }
 
     // -- SysID --
@@ -138,13 +143,13 @@ public class OI extends SubsystemIF {
 
         // Register commands to the controller
 
-        driveController.leftBumper().onTrue(Commands.runOnce(SignalLogger::start));
-        driveController.rightBumper().onTrue(Commands.runOnce(SignalLogger::stop));
+        controller.leftBumper().onTrue(Commands.runOnce(SignalLogger::start));
+        controller.rightBumper().onTrue(Commands.runOnce(SignalLogger::stop));
 
-        driveController.povUp().whileTrue(quasistaticForward);
-        driveController.povDown().whileTrue(quasistaticReverse);
-        driveController.povLeft().whileTrue(dynamicForward);
-        driveController.povRight().whileTrue(dynamicReverse);
+        controller.povUp().whileTrue(quasistaticForward);
+        controller.povDown().whileTrue(quasistaticReverse);
+        controller.povLeft().whileTrue(dynamicForward);
+        controller.povRight().whileTrue(dynamicReverse);
     }
 
     public void cleanUpSysId() {
