@@ -20,6 +20,8 @@ public final class RobotMap {
     public static final int ELEVATOR_RIGHT_MOTOR = 6;
     public static final int ELEVATOR_ENCODER = 7;
 
+    public static final int INDEXER_MOTOR = 18;
+
     public record SwerveModuleDescriptor(String moduleName, Translation2d offset, int driveId, int steerId,
                                          int encoderId) {}
 }

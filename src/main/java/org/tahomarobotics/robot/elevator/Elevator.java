@@ -201,7 +201,7 @@ public class Elevator extends SubsystemIF {
 
     @Override
     public void onTeleopInit() {
-        setElevatorHeight(ELEVATOR_MID_POSE);
+        setElevatorHeight(ELEVATOR_LOW_POSE);
     }
 
     @Override

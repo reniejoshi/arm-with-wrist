@@ -3,6 +3,7 @@ package org.tahomarobotics.robot;
 import com.ctre.phoenix6.SignalLogger;
 import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -14,6 +15,8 @@ import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.chassis.ChassisCommands;
 import org.tahomarobotics.robot.elevator.Elevator;
 import org.tahomarobotics.robot.elevator.ElevatorConstants;
+import org.tahomarobotics.robot.indexer.Indexer;
+import org.tahomarobotics.robot.indexer.IndexerCommands;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.util.sysid.SysIdTests;
 
@@ -33,10 +36,11 @@ public class OI extends SubsystemIF {
 
     // -- Subsystems --
 
+    private final Indexer indexer = Indexer.getInstance();
     private final Chassis chassis = Chassis.getInstance();
     private final Elevator elevator = Elevator.getInstance();
 
-    private final List<SubsystemIF> subsystems = List.of(chassis, elevator);
+    private final List<SubsystemIF> subsystems = List.of(indexer, chassis, elevator);
 
     // -- Controllers --
 
@@ -62,6 +66,15 @@ public class OI extends SubsystemIF {
         // Chassis
 
         controller.povDown().onTrue(Commands.runOnce(chassis::orientToZeroHeading));
+
+        // Indexer
+
+        Pair<Command, Command> indexerCommands = IndexerCommands.createIndexerCommands(indexer);
+        controller.leftTrigger().onTrue(indexerCommands.getFirst()).onFalse(indexerCommands.getSecond());
+
+        Pair<Command, Command> indexerEjectingCommands = IndexerCommands.createIndexerEjectingCommands(indexer);
+        controller.povLeft().onTrue(indexerEjectingCommands.getFirst())
+                       .onFalse(indexerEjectingCommands.getSecond());
 
         // Elevator
 
