@@ -1,38 +1,65 @@
 package org.tahomarobotics.robot.windmill.commands;
 
 import edu.wpi.first.epilogue.Logged;
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.trajectory.TrajectoryConfig;
-import edu.wpi.first.math.trajectory.TrajectoryGenerator;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import org.tahomarobotics.robot.windmill.Windmill;
-import org.tahomarobotics.robot.windmill.WindmillKinematics;
-import org.tahomarobotics.robot.windmill.WindmillState;
-import org.tahomarobotics.robot.windmill.WindmillTrajectory;
+import org.tahomarobotics.robot.collector.Collector;
+import org.tahomarobotics.robot.windmill.*;
+import org.tahomarobotics.robot.windmill.WindmillConstants.*;
 import org.tinylog.Logger;
 
-import java.util.List;
+import java.util.Optional;
 
 @Logged(strategy = Logged.Strategy.OPT_IN)
 public class WindmillMoveCommand extends Command {
+    private static final boolean DEBUG = false;
+    private static final double TIME_ELAPSED_TOLERANCE = 0.05;
+
+    // Subsystems
+
     private final Windmill windmill = Windmill.getInstance();
 
-    private final WindmillTrajectory windmillTrajectory;
+    // Trajectory
+
+    private final Pair<TrajectoryState, TrajectoryState> fromTo;
+    private final WindmillTrajectory trajectory;
+
+    // State
+
     private final Timer timer = new Timer();
 
-    public WindmillMoveCommand(WindmillTrajectory windmillTrajectory) {
-        this.windmillTrajectory = windmillTrajectory;
+    // Command
+
+    private WindmillMoveCommand(Pair<TrajectoryState, TrajectoryState> fromTo, WindmillTrajectory trajectory) {
+         Logger.info("Created move command from {} to {}.", fromTo.getFirst(), fromTo.getSecond());
+
+        this.fromTo = fromTo;
+        this.trajectory = trajectory;
 
         addRequirements(windmill);
     }
 
     @Override
     public void initialize() {
+        if (!Collector.getInstance().isDeploymentCollecting()) {
+            Logger.error("Cannot run trajectory with collector down!");
+            cancel();
+            return;
+        }
+
+        if (!(windmill.isArmAtPosition() && windmill.isElevatorAtPosition())) {
+            Logger.error("Windmill was not within tolerance for starting state!");
+            cancel();
+            return;
+        }
+
+        windmill.setTargetState(fromTo.getSecond());
+        windmill.field.getObject("Trajectory").setTrajectory(trajectory.getBackingTrajectory());
+
+        Logger.info("Running trajectory: '{}'", WindmillTrajectory.getFileNameWithExtension(fromTo));
         timer.restart();
     }
 
@@ -40,18 +67,18 @@ public class WindmillMoveCommand extends Command {
     public void execute() {
         double time = timer.get();
         try {
-            WindmillState state = windmillTrajectory.sample(time);
+            WindmillState state = trajectory.sampleWindmillState(time);
             windmill.setState(state);
 
-            Pose2d sample = windmillTrajectory.samplePose2d(time);
-            Logger.info(
-                """
-                Endpoint ({0.0} seconds): ({+0.000;-0.000} meters, {+0.000;-0.000} meters) -> State: ({+0.000;-0.000} meters, {+0.000;-0.000} degrees)
-                """.trim(),
-                time,
-                sample.getX(), sample.getY(),
-                state.elevatorState().heightMeters(), Units.radiansToDegrees(state.armState().angleRadians())
-            );
+            if (DEBUG) {
+                Pose2d sample = trajectory.sampleBackingTrajectory(time).poseMeters;
+                Logger.info(
+                    """
+                        Endpoint ({0.0} seconds): ({+0.000;-0.000} meters, {+0.000;-0.000} meters) -> State: ({+0.000;-0.000} meters, {+0.000;-0.000} degrees)
+                        """.trim(), time, sample.getX(), sample.getY(), state.elevatorState().heightMeters(),
+                    Units.radiansToDegrees(state.armState().angleRadians())
+                );
+            }
         } catch (WindmillKinematics.KinematicsException e) {
             Logger.error("Kinematics Error: {}", e);
             cancel();
@@ -60,6 +87,23 @@ public class WindmillMoveCommand extends Command {
 
     @Override
     public boolean isFinished() {
-        return timer.hasElapsed(windmillTrajectory.getTotalTimeSeconds());
+        return windmill.isAtTargetState() || timer.hasElapsed(trajectory.getDuration() + TIME_ELAPSED_TOLERANCE);
+    }
+
+    @Override
+    public InterruptionBehavior getInterruptionBehavior() {
+        return InterruptionBehavior.kCancelIncoming;
+    }
+
+    // -- Helpers --
+
+    public static Optional<Command> beef() {
+        return Optional.empty();
+        // TODO
+//        return WindmillTrajectories.getEditorTrajectory().map(t -> new WindmillMoveCommand(Pair.of(TrajectoryState.IDK, TrajectoryState.IDK), t));
+    }
+
+    public static Optional<Command> fromTo(TrajectoryState from, TrajectoryState to) {
+        return WindmillTrajectories.getTrajectory(from, to).map(t -> new WindmillMoveCommand(Pair.of(from, to), t));
     }
 }

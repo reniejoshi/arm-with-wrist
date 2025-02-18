@@ -7,6 +7,8 @@ import org.tinylog.Logger;
 public final class Main {
     private Main() {}
 
+    public static Identity robotID;
+
     public static void main(String... args) {
         int idx = 0;
         if (args.length == 0) {
@@ -19,8 +21,8 @@ public final class Main {
             }
         }
 
-        Identity identity = Identity.values()[idx];
-        Logger.info("Identity: {}", identity);
+        robotID = Identity.values()[idx];
+        Logger.info("Identity: {}", robotID);
 
         RobotBase.startRobot(Robot::new);
     }

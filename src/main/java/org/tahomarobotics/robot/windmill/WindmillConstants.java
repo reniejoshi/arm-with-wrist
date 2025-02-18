@@ -2,14 +2,30 @@ package org.tahomarobotics.robot.windmill;
 
 import com.ctre.phoenix6.configs.*;
 import com.ctre.phoenix6.signals.*;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
 
 public class WindmillConstants {
     // -- Elevator --
+
+    // States
+
+    public enum TrajectoryState {
+        COLLECT(new Translation2d(-0.056, -0.23)),
+        STOW(new Translation2d(0, 0.7)),
+        L4(new Translation2d(-0.332, 1.59)),
+        L3(new Translation2d(-0.28, 1)),
+        L2(new Translation2d(-0.279, 0.61)),
+        START(new Translation2d(0, ARM_LENGTH));
+
+        public final Translation2d t2d;
+
+        TrajectoryState(Translation2d t2d) {
+            this.t2d = t2d;
+        }
+    }
 
     // Gearing
 
@@ -28,7 +44,7 @@ public class WindmillConstants {
     public static final double ELEVATOR_COLLECT_POSE = 0.43;
     public static final double ELEVATOR_HIGH_POSE = 1.03; // Meters
     public static final double ELEVATOR_MID_POSE = 0.45; // Meters
-    public static final double ELEVATOR_LOW_POSE = 0.1; // Meters
+    public static final double ELEVATOR_LOW_POSE = 0.05; // Meters
 
     public static final double ELEVATOR_LOW_STAGE_MAX = 0.5461; // Meters
 
@@ -36,11 +52,12 @@ public class WindmillConstants {
 
     public static final double ELEVATOR_POSITION_TOLERANCE = 0.005; // Meters
     public static final double ELEVATOR_VELOCITY_TOLERANCE = 0.01; // Meters / sec
+    public static final double TRAJECTORY_POSITION_TOLERANCE = 0.2; // Meters
 
     // Motion
 
     public static final double ELEVATOR_MAX_VELOCITY = 4; // Meters / sec
-    public static final double ELEVATOR_MAX_ACCELERATION = ELEVATOR_MAX_VELOCITY; // Meters / sec^2
+    public static final double ELEVATOR_MAX_ACCELERATION = ELEVATOR_MAX_VELOCITY * 4; // Meters / sec^2
     public static final double ELEVATOR_MAX_JERK = ELEVATOR_MAX_ACCELERATION * 4.0; // Meters / sec^3
 
     // -- Arm --
@@ -74,13 +91,6 @@ public class WindmillConstants {
 
     public static final double END_EFFECTOR_MIN_HEIGHT = -0.25; // Bottom-most point the carriage hits
     public static final double END_EFFECTOR_MAX_HEIGHT = ELEVATOR_MAX_POSE + ARM_LENGTH;
-
-    // -- Windmill Poses --
-
-    public static final Pose2d STARTING_POSE = new Pose2d(0, ELEVATOR_LOW_POSE + ARM_LENGTH, Rotation2d.kCCW_90deg);
-    public static final Pose2d COLLECTING_POSE = new Pose2d();
-    public static final Pose2d L4_POSE = new Pose2d();
-    public static final Pose2d STOW_POSE = new Pose2d();
 
     // -- Configurations --
 

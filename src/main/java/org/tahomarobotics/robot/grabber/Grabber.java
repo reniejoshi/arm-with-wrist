@@ -124,6 +124,10 @@ public class Grabber extends SubsystemIF {
         setTargetState(GrabberState.EJECTING);
     }
 
+    public void transitionToScoring() {
+        setTargetState(GrabberState.SCORING);
+    }
+
     // -- Getters --
 
     public boolean isArmAtPassing() {

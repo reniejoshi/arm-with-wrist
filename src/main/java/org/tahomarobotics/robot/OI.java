@@ -25,6 +25,7 @@ import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.util.sysid.SysIdTests;
 import org.tahomarobotics.robot.windmill.Windmill;
 import org.tahomarobotics.robot.windmill.WindmillConstants;
+import org.tahomarobotics.robot.windmill.commands.WindmillMoveCommand;
 
 import java.util.List;
 import java.util.function.Function;
@@ -105,15 +106,22 @@ public class OI extends SubsystemIF {
         controller.povLeft().onTrue(grabberEjectingCommands.getFirst())
                   .onFalse(grabberEjectingCommands.getSecond());
 
+        Pair<Command, Command> grabberScoringCommands = GrabberCommands.createGrabberScoringCommands(grabber);
+        controller.rightTrigger().onTrue(grabberScoringCommands.getFirst())
+                  .onFalse(grabberScoringCommands.getSecond());
+
+
         // Elevator
         // TODO: Temporary Controls
 
-        SmartDashboard.putData("Elevator Up", Commands.runOnce(
-            () -> windmill.setElevatorHeight(WindmillConstants.ELEVATOR_HIGH_POSE))
+        SmartDashboard.putData(
+            "Elevator Up", Commands.runOnce(
+                () -> windmill.setElevatorHeight(WindmillConstants.ELEVATOR_HIGH_POSE))
         );
 
-        SmartDashboard.putData("Elevator Down", Commands.runOnce(
-            () -> windmill.setElevatorHeight(WindmillConstants.ELEVATOR_LOW_POSE))
+        SmartDashboard.putData(
+            "Elevator Down", Commands.runOnce(
+                () -> windmill.setElevatorHeight(WindmillConstants.ELEVATOR_LOW_POSE))
         );
 
         // Arm
@@ -121,19 +129,25 @@ public class OI extends SubsystemIF {
 
         controller.start().onTrue(ClimberCommands.getClimberCommand());
 
-        SmartDashboard.putData("Arm Upright", Commands.runOnce(
-            () -> windmill.setArmPosition(WindmillConstants.ARM_UPRIGHT_POSE))
+        SmartDashboard.putData(
+            "Arm Upright", Commands.runOnce(
+                () -> windmill.setArmPosition(WindmillConstants.ARM_UPRIGHT_POSE))
         );
 
-        SmartDashboard.putData("Arm Horizontal", Commands.runOnce(
-            () -> windmill.setArmPosition(WindmillConstants.ARM_TEST_POSE))
+        SmartDashboard.putData(
+            "Arm Horizontal", Commands.runOnce(
+                () -> windmill.setArmPosition(WindmillConstants.ARM_TEST_POSE))
         );
 
-        SmartDashboard.putData("Run Trajectory Editor's Path", windmill.runTrajectoryEditorTrajectory());
+        controller.y().onTrue(windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.L4, WindmillConstants.TrajectoryState.COLLECT));
+        controller.b().onTrue(windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.L3, WindmillConstants.TrajectoryState.COLLECT));
+        controller.a().onTrue(windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.L2, WindmillConstants.TrajectoryState.COLLECT));
+        controller.x().onTrue(windmill.createTransitionToggleCommand(WindmillConstants.TrajectoryState.COLLECT, WindmillConstants.TrajectoryState.STOW));
 
         SmartDashboard.putData(
             "Set Elevator Collecting", Commands.runOnce(
-                () -> windmill.setElevatorHeight(WindmillConstants.ELEVATOR_COLLECT_POSE)));
+                () -> windmill.setElevatorHeight(WindmillConstants.ELEVATOR_COLLECT_POSE))
+        );
         SmartDashboard.putData(
             "Set Arm Collecting", Commands.runOnce(() -> windmill.setArmPosition(WindmillConstants.ARM_COLLECT_POSE)));
     }

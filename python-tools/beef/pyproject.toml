@@ -1,0 +1,12 @@
+[project]
+name = "beef"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "catppuccin>=2.3.4",
+    "dearpygui>=2.0.0",
+    "loguru>=0.7.3",
+    "robotpy>=2025.3.1.0",
+]

@@ -14,6 +14,7 @@ import org.tahomarobotics.robot.indexer.Indexer;
 import org.tahomarobotics.robot.grabber.Grabber;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.vision.Vision;
+import org.tahomarobotics.robot.windmill.commands.WindmillTrajectories;
 import org.tinylog.Logger;
 
 import java.util.List;
@@ -60,7 +61,9 @@ public class Robot extends TimedRobot {
         });
         Epilogue.bind(this);
 
-//        disableWatchdog(this, IterativeRobotBase.class);
+        WindmillTrajectories.initialize();
+
+//        disableWatchdog(`this, IterativeRobotBase.class);
 //        disableWatchdog(CommandScheduler.getInstance(), CommandScheduler.class);
     }
 

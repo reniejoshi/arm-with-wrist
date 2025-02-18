@@ -10,14 +10,8 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.networktables.DoubleArraySubscriber;
-import edu.wpi.first.networktables.NetworkTableEvent;
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StringSubscriber;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -36,11 +30,10 @@ import org.tahomarobotics.robot.windmill.commands.WindmillCommands;
 import org.tahomarobotics.robot.windmill.commands.WindmillMoveCommand;
 import org.tinylog.Logger;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 
-import static edu.wpi.first.units.Units.*;
+import static edu.wpi.first.units.Units.Second;
+import static edu.wpi.first.units.Units.Volts;
 import static org.tahomarobotics.robot.windmill.WindmillConstants.*;
 
 @Logged(strategy = Logged.Strategy.OPT_IN)
@@ -72,17 +65,16 @@ public class Windmill extends SubsystemIF {
 
     private double targetHeight;
     private double targetAngle;
+    private TrajectoryState targetTrajectoryState = TrajectoryState.START;
 
     private boolean elevatorCalibrated = true, armCalibrated = true;
-    private double armOffset;
+
     private CalibrationData<Boolean> elevatorCalibration = null;
     private CalibrationData<Boolean> armCalibration = null;
 
     // Trajectory
 
-    private final StringSubscriber sub;
-    private final Field2d field = new Field2d();
-    private WindmillTrajectory networkTablesTrajectory;
+    public final Field2d field = new Field2d();
 
     // -- Initialization --
 
@@ -143,10 +135,6 @@ public class Windmill extends SubsystemIF {
 
         ParentDevice.optimizeBusUtilizationForAll(
             elevatorLeftMotor, elevatorRightMotor, elevatorEncoder, armMotor, armEncoder);
-
-        // Sub
-        sub = NetworkTableInstance.getDefault().getStringTopic("/SmartDashboard/BEEF/Hash")
-                                  .subscribe("");
     }
 
     public static Windmill getInstance() {
@@ -158,21 +146,6 @@ public class Windmill extends SubsystemIF {
         // Publish calibration commands
         SmartDashboard.putData("Calibrate Elevator", WindmillCommands.createCalibrateElevatorCommand(this));
         SmartDashboard.putData("Calibrate Arm", WindmillCommands.createCalibrateArmCommand(this));
-
-
-        if (RobotConfiguration.IS_USING_TRAJECTORY_EDITOR) {
-            // Trajectory Editor Field
-            SmartDashboard.putData("Trajectory Editor Visualization", field);
-
-            NetworkTableInstance.getDefault().addListener(
-                sub,
-                EnumSet.of(NetworkTableEvent.Kind.kValueAll),
-                e -> {
-                    networkTablesTrajectory = WindmillTrajectory.generateFromNetworkTables();
-                    field.getObject("Trajectory").setTrajectory(networkTablesTrajectory.getTrajectory());
-                }
-            );
-        }
 
         return this;
     }
@@ -257,6 +230,11 @@ public class Windmill extends SubsystemIF {
         return new WindmillState(0, elevatorState, armState);
     }
 
+    @Logged(name = "Target Trajectory State")
+    public TrajectoryState getTargetTrajectoryState() {
+        return targetTrajectoryState;
+    }
+
     // Elevator
 
     @Logged(name = "elevatorHeight")
@@ -316,7 +294,26 @@ public class Windmill extends SubsystemIF {
         return Math.abs(armVelocity.refresh().getValueAsDouble()) >= ARM_VELOCITY_TOLERANCE;
     }
 
+    @Logged
+    public double distanceToTargetState() {
+        return targetTrajectoryState.t2d.getDistance(getWindmillPosition());
+    }
+
+    @Logged
+    public boolean isAtTargetState() {
+        return distanceToTargetState() < 0.03;
+    }
+
     // -- Control --
+
+    public void setTargetState(TrajectoryState targetState) {
+        this.targetTrajectoryState = targetState;
+    }
+
+    public void setState(WindmillState state) {
+        setElevatorHeight(state.elevatorState().heightMeters());
+        setArmPosition(Units.radiansToRotations(state.armState().angleRadians()));
+    }
 
     public void setElevatorHeight(double height) {
         if (!elevatorCalibrated) {
@@ -335,11 +332,6 @@ public class Windmill extends SubsystemIF {
         Logger.info("Set elevator height: " + targetHeight);
     }
 
-    public void setState(WindmillState state) {
-        setElevatorHeight(state.elevatorState().heightMeters());
-        setArmPosition(Units.radiansToRotations(state.armState().angleRadians()));
-    }
-
     public void setArmPosition(double position) {
         if (!armCalibrated) {
             Logger.error("Cannot move arm without calibration!");
@@ -350,6 +342,24 @@ public class Windmill extends SubsystemIF {
         armMotor.setControl(armPositionControl.withPosition(targetAngle));
 
         Logger.info("Set arm position: " + targetAngle);
+    }
+
+    public Command createTransitionCommand(TrajectoryState to) {
+        return Commands.deferredProxy(() -> WindmillMoveCommand.fromTo(targetTrajectoryState, to).orElseGet(Commands::none));
+    }
+
+    public Command createTransitionToggleCommand(TrajectoryState onTrue, TrajectoryState onFalse) {
+        return Commands.deferredProxy(() -> {
+            if (targetTrajectoryState == onFalse) {
+                Logger.info("Toggling between {} and {}", onFalse, onTrue);
+                return createTransitionCommand(onTrue);
+            } else if (targetTrajectoryState == onTrue) {
+                Logger.info("Toggling between {} and {}", onTrue, onFalse);
+                return createTransitionCommand(onFalse);
+            } else {
+                return Commands.runOnce(() -> Logger.error("Cannot toggle from an untoggleable state."));
+            }
+        });
     }
 
     public void stopElevator() {
@@ -364,18 +374,18 @@ public class Windmill extends SubsystemIF {
 
     @Override
     public void periodic() {
-        BaseStatusSignal.refreshAll(
-            elevatorPosition, elevatorVelocity, elevatorCurrent, armPosition, armVelocity, armCurrent);
-    }
-
-    // -- Trajectory Editor --
-
-    public Command runTrajectoryEditorTrajectory() {
-        return Commands.deferredProxy(
-            () -> networkTablesTrajectory == null ? Commands.none() : new WindmillMoveCommand(networkTablesTrajectory));
+        BaseStatusSignal.refreshAll(elevatorPosition, elevatorVelocity, elevatorCurrent, armPosition, armVelocity, armCurrent);
     }
 
     // -- Overrides --
+
+
+    @Override
+    public void onTeleopInit() {
+        setElevatorHeight(ELEVATOR_LOW_POSE);
+        setArmPosition(0.25);
+        setTargetState(TrajectoryState.STOW);
+    }
 
     @Override
     public void onDisabledInit() {

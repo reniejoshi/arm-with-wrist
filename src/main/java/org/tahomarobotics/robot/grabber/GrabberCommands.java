@@ -17,4 +17,11 @@ public class GrabberCommands {
 
         return Pair.of(onTrue, onFalse);
     }
+
+    public static Pair<Command, Command> createGrabberScoringCommands(Grabber grabber) {
+        Command onTrue = grabber.runOnce(grabber::transitionToScoring);
+        Command onFalse = grabber.runOnce(grabber::transitionToDisabled);
+
+        return Pair.of(onTrue, onFalse);
+    }
 }

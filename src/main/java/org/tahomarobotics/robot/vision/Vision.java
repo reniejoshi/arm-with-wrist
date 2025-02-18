@@ -26,15 +26,6 @@ public class Vision extends SubsystemIF implements AutoCloseable {
 
     // Cameras
 
-//    @Logged
-//    private final AprilTagCamera scoringSide =
-//        new AprilTagCamera(VisionConstants.SCORING_SIDE, VisionConstants.simOV9782Properties,
-//                           mountEst.chainConsumer(estimationCallback));
-//    @Logged
-//    private final AprilTagCamera collectorSide =
-//        new AprilTagCamera(VisionConstants.COLLECTOR_SIDE, VisionConstants.simOV9782Properties,
-//                           mountEst.chainConsumer(estimationCallback));
-
     @Logged
     private final AprilTagCamera elevatorSwerve =
         new AprilTagCamera(VisionConstants.ELEVATOR_SWERVE, VisionConstants.simOV9782Properties,
@@ -50,7 +41,7 @@ public class Vision extends SubsystemIF implements AutoCloseable {
               .collect(Collectors.toMap(
                   AprilTagCamera::getName,
                   Function.identity()
-              ));
+             ));
 
     // Diagnostic
 
