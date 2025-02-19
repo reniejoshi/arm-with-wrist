@@ -44,11 +44,12 @@ public class WindmillMoveCommand extends Command {
 
     @Override
     public void initialize() {
-        if (!Collector.getInstance().isDeploymentCollecting()) {
-            Logger.error("Cannot run trajectory with collector down!");
-            cancel();
-            return;
-        }
+        // TODO: add this back in if we change trajectories to collector side
+//        if (!Collector.getInstance().isDeploymentCollecting()) {
+//            Logger.error("Cannot run trajectory with collector down!");
+//            cancel();
+//            return;
+//        }
 
         if (!windmill.isAtTargetTrajectoryState()) {
             Logger.error(
