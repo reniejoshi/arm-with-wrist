@@ -5,6 +5,9 @@ import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
+import com.pathplanner.lib.config.ModuleConfig;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.config.RobotConfig;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
@@ -26,7 +29,10 @@ public class ChassisConstants {
     public static final double HALF_WHEELBASE = WHEELBASE / 2;
 
     /** Approximate mass of the robot in <strong>kilograms</strong> */
-    public static final double MASS = 52.1631;
+    private static final double BATTERY_MASS = Units.lbsToKilograms(13.6);
+    private static final double BUMPER_MASS = Units.lbsToKilograms(16.0);
+    private static final double ROBOT_MASS = Units.lbsToKilograms(119.0);
+    public static final double MASS = ROBOT_MASS + BATTERY_MASS + BUMPER_MASS;
 
     /** Approximate radius of the wheel in <strong>meters</strong> */
     private static final double WHEEL_RADIUS = Units.inchesToMeters(3.95 / 2 - 0.1 /* Tread compression */);
@@ -48,6 +54,8 @@ public class ChassisConstants {
     /** Ratio between angular position and position in <strong>meters</strong> for the wheel. */
     public static final double DRIVE_POSITION_COEFFICIENT = WHEEL_CIRCUMFERENCE * DRIVE_REDUCTION;
 
+    public static final double ROBOT_MOI = 1.0 / 12.0 * MASS *  (TRACK_WIDTH * TRACK_WIDTH + WHEELBASE * WHEELBASE);
+
     /**
      * Load inertia for each drive motor in <strong>kilogram meter squared</strong>.
      * <p>
@@ -55,7 +63,8 @@ public class ChassisConstants {
      * N is the number of modules, r is the radius of the wheel, and G is the gear ratio.
      */
     public static final double DRIVE_MOTOR_MOI = MASS / 4 * Math.pow(WHEEL_RADIUS * DRIVE_REDUCTION, 2);
-
+    /** Coefficient of friction between the wheel and the ground. */
+    public static final double WHEEL_COF = 1.0; // Placeholder
     // Simulation
 
     /** A semi-arbitrary scaling factor for the motor model MOIs. */
@@ -70,6 +79,9 @@ public class ChassisConstants {
     public static final double MAX_ANGULAR_VELOCITY = MAX_VELOCITY / Math.hypot(HALF_TRACK_WIDTH, HALF_WHEELBASE);
     /** Max average acceleration across all modules in <strong>meters per second squared</strong>. */
     public static final double ACCELERATION_LIMIT = 6.0;
+    //Placeholder PID values
+    public static final PIDConstants AUTO_TRANSLATION_PID = new PIDConstants(7.5,0,0.5);
+    public static final PIDConstants AUTO_ROTATION_PID = new PIDConstants(5, 0, 0.5);
 
     // Control Loops
 
@@ -84,6 +96,23 @@ public class ChassisConstants {
     private static final double STEER_STATOR_CURRENT_LIMIT = 30;
 
     // Configuration
+
+    public static final RobotConfig robotConfig = new RobotConfig(
+        MASS,
+        ROBOT_MOI,
+        new ModuleConfig(
+            WHEEL_RADIUS,
+            MAX_VELOCITY * 0.95,
+            WHEEL_COF,
+            DRIVE_MOTOR.withReduction(1.0/DRIVE_REDUCTION),
+            DRIVE_SUPPLY_CURRENT_LIMIT,  // This is used when calculating current available at Nominal Voltage (@12V) which is limited via the supply current
+            1
+        ),
+        FRONT_LEFT_OFFSET,
+        FRONT_RIGHT_OFFSET,
+        BACK_LEFT_OFFSET,
+        BACK_RIGHT_OFFSET
+    );
 
     /** @return The configuration for the drive motor. */
     public static TalonFXConfiguration createDriveMotorConfiguration() {

@@ -163,6 +163,10 @@ public class Chassis extends SubsystemIF {
 
     // Getters
 
+    public Field2d getField() {
+        return fieldPose;
+    }
+
     @Logged(name = "pose")
     public Pose2d getPose() {
         synchronized (poseEstimator) {
@@ -232,6 +236,10 @@ public class Chassis extends SubsystemIF {
         }
 
         drive(velocity, isFieldCentric);
+    }
+
+    public void autoDrive(ChassisSpeeds velocity) {
+        drive(velocity, false);
     }
 
     private void setSwerveStates(SwerveModuleState[] states) {
@@ -384,6 +392,15 @@ public class Chassis extends SubsystemIF {
     }
 
     // Status Signals
+
+    @Logged
+    public double getCurrentDraw() {
+        double totalCurrent = 0;
+        for (double current : modules.stream().map(SwerveModule::getDriveCurrent).toList()) {
+            totalCurrent += current;
+        }
+        return totalCurrent;
+    }
 
     private List<BaseStatusSignal> getStatusSignals() {
         return List.of(yaw, yawVelocity);

@@ -5,6 +5,7 @@ import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.epilogue.NotLogged;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import org.tahomarobotics.robot.auto.Autonomous;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.util.shims.FauxWatchdog;
 import org.tahomarobotics.robot.windmill.Windmill;
@@ -25,6 +26,8 @@ public class Robot extends TimedRobot {
 
     @Logged(name = "Chassis")
     private final Chassis chassis = Chassis.getInstance();
+    @Logged(name = "Autonomous")
+    private final Autonomous autonomous = Autonomous.getInstance();
     @Logged(name = "Vision")
     private final Vision vision = Vision.getInstance();
     @Logged(name = "Windmill")
@@ -43,6 +46,7 @@ public class Robot extends TimedRobot {
     @NotLogged
     private final List<SubsystemIF> subsystems = List.of(
         chassis.initialize(),
+        autonomous.initialize(),
         vision.initialize(),
         windmill.initialize(),
         indexer.initialize(),
@@ -87,6 +91,7 @@ public class Robot extends TimedRobot {
     @Override
     public void autonomousInit() {
         subsystems.forEach(SubsystemIF::onAutonomousInit);
+        autonomous.getSelectedAuto().schedule();
     }
 
     @Override

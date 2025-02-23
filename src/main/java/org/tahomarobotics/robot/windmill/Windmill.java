@@ -33,6 +33,7 @@ import org.tahomarobotics.robot.windmill.commands.WindmillMoveCommand;
 import org.tinylog.Logger;
 
 import java.util.List;
+import java.util.Optional;
 
 import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Volts;
@@ -73,6 +74,7 @@ public class Windmill extends SubsystemIF {
     private WindmillState targetState = WindmillState.fromPrevious(0, 0, 0, null);
     private TrajectoryState targetTrajectoryState = TrajectoryState.START;
 
+    @Logged
     private boolean zeroed = false;
 
     // Trajectory
@@ -140,6 +142,7 @@ public class Windmill extends SubsystemIF {
 
         // Calibrate on first enable
         new Trigger(RobotState::isEnabled).onTrue(Commands.runOnce(this::calibrate).onlyIf(() -> !zeroed));
+        new Trigger(RobotState::isEnabled).onTrue(Commands.runOnce(this::calibrate).onlyIf(() -> !zeroed));
 
         // Calibrate with user button
         new Trigger(RobotController::getUserButton).onTrue(WindmillCommands.createUserButtonCalibrateCommand(this));
@@ -159,6 +162,7 @@ public class Windmill extends SubsystemIF {
         armEncoder.setPosition(ARM_CALIBRATION_POSE / ARM_BELT_REDUCTION);
 
         zeroed = true;
+        Logger.info("Windmill Calibrated");
         enableBrakeMode();
     }
 
@@ -214,6 +218,10 @@ public class Windmill extends SubsystemIF {
     @Logged(name = "Target Trajectory State")
     public TrajectoryState getTargetTrajectoryState() {
         return targetTrajectoryState;
+    }
+
+    public boolean isZeroed() {
+        return zeroed;
     }
 
     // Elevator
@@ -301,8 +309,6 @@ public class Windmill extends SubsystemIF {
         elevatorLeftMotor.setControl(
             elevatorPositionControl.withPosition(targetHeight)
         );
-
-        Logger.info("Set elevator height: " + targetHeight);
     }
 
     public void setArmPosition(double position) {
@@ -313,12 +319,16 @@ public class Windmill extends SubsystemIF {
 
         targetAngle = position;
         armMotor.setControl(armPositionControl.withPosition(targetAngle));
-
-        Logger.info("Set arm position: " + targetAngle);
     }
 
     public Command createTransitionCommand(TrajectoryState to) {
-        return Commands.deferredProxy(() -> WindmillMoveCommand.fromTo(targetTrajectoryState, to).orElseGet(Commands::none));
+        return Commands.deferredProxy(() -> {
+            Optional<Command> output = WindmillMoveCommand.fromTo(targetTrajectoryState, to);
+            if (output.isEmpty()) {
+                Logger.error("WindmillMoveCommand from " + targetTrajectoryState + " to " + to + " failed.");
+            }
+            return output.orElseGet(Commands::none);
+        });
     }
 
     public Command createTransitionToggleCommand(TrajectoryState onTrue, TrajectoryState onFalse) {

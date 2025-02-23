@@ -44,6 +44,7 @@ public class WindmillMoveCommand extends Command {
 
     @Override
     public void initialize() {
+        Logger.info("Started windmill command");
         // TODO: add this back in if we change trajectories to collector side
 //        if (!Collector.getInstance().isDeploymentCollecting()) {
 //            Logger.error("Cannot run trajectory with collector down!");
@@ -59,6 +60,7 @@ public class WindmillMoveCommand extends Command {
             cancel();
             return;
         }
+        Logger.info("Passed windmill position verification");
 
         windmill.setTargetState(fromTo.getSecond());
         windmill.field.getObject("Trajectory").setTrajectory(trajectory.getBackingTrajectory());
