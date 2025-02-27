@@ -1,6 +1,7 @@
 package org.tahomarobotics.robot.chassis;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -40,9 +41,11 @@ public class ChassisCommands {
 
         return chassis.runEnd(
             () -> {
+                double direction = DriverStation.getAlliance().orElse(null) == DriverStation.Alliance.Red ? -1.0 : 1.0;
+
                 chassis.drive(new ChassisSpeeds(
-                    x.getAsDouble() * maxVelocity,
-                    y.getAsDouble() * maxVelocity,
+                    x.getAsDouble() * maxVelocity * direction,
+                    y.getAsDouble() * maxVelocity * direction,
                     omega.getAsDouble() * maxAngularVelocity
                 ));
             },
