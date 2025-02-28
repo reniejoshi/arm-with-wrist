@@ -68,7 +68,9 @@ public class AutoConstants {
         Translation2d target = currentTranslation.nearest(poles);
         int index = poles.indexOf(target);
 
-        return new Pose2d(target, Rotation2d.fromDegrees(60).times(Math.floor((double) index / 2)).plus(Rotation2d.k180deg));
+        return new Pose2d(target, Rotation2d.fromDegrees(60).times(Math.floor((double) index / 2))
+                                            .plus(alliance == DriverStation.Alliance.Blue ? Rotation2d.k180deg : Rotation2d.kZero)
+        );
     }
 
     public static final String DEFAULT_AUTO_NAME = "No Operation";
