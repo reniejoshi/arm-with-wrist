@@ -10,7 +10,7 @@ public class GrabberConstants {
     public static final double EJECT_VELOCITY = 15;
     public static final double HOLD_VOLTAGE = -0.25;
 
-    public static final double COLLECTION_DELAY = 0.5;
+    public static final double COLLECTION_DELAY = 0.25;
 
     public static final double GEAR_REDUCTION;
 
@@ -20,6 +20,8 @@ public class GrabberConstants {
             default -> GEAR_REDUCTION = (10d / 26d);
         }
     }
+
+    public static final double COLLECTION_CURRENT_THRESHOLD = 16;
 
     // -- States --
 

@@ -13,7 +13,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.indexer.Indexer;
-import org.tahomarobotics.robot.indexer.IndexerConstants;
 import org.tahomarobotics.robot.util.RobustConfigurator;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.util.signals.LoggedStatusSignal;
@@ -101,8 +100,11 @@ public class Grabber extends SubsystemIF {
 
     private void stateMachine() {
         if (state == GrabberState.COLLECTING) {
-            if (indexer.getState() == IndexerConstants.IndexerState.PASSING && !indexer.isBeanBakeTripped() && !collectionTimer.isRunning()) {
+            if (current.getValueAsDouble() > COLLECTION_CURRENT_THRESHOLD) {
                 collectionTimer.start();
+            } else {
+                collectionTimer.stop();
+                collectionTimer.reset();
             }
         }
 
