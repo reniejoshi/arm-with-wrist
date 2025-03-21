@@ -30,32 +30,48 @@ import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.util.identity.Identity;
 
 public class WindmillConstants {
+
+    private static final boolean AEE_FEATURE = true;
+
     // -- Elevator --
 
     // States
 
     public enum TrajectoryState {
-        HIGH_DESCORE(0.630, Units.degreesToRadians(130.693)),  // ALGAE: B button
-        LOW_DESCORE(0.254, Units.degreesToRadians(133.945)),  // ALGAE: A button
-        CORAL_COLLECT(0.405, Units.degreesToRadians(267.809)),  // CORAL: RS button toggle
-        STOW(Units.inchesToMeters(1.901), Units.degreesToRadians(89.913)),  // RS button toggle
-        ALGAE_COLLECT(0.0214, Units.degreesToRadians(177.211)),  // ALGAE: RS button toggle
-        ALGAE_PASSOFF(Units.inchesToMeters(42.344), Units.degreesToRadians(287.809)),
-        ALGAE_PRESCORE(Units.inchesToMeters(47.244), Units.degreesToRadians(20)),  // ALGAE: Y button
-        ALGAE_SCORE(Units.inchesToMeters(47.344), Units.degreesToRadians(89.913)),  // ALGAE: Y button
-        L4(Units.inchesToMeters(42.344), Units.degreesToRadians(120.548)),  // CORAL: Y button
-        L3(0.479, Units.degreesToRadians(125.551)),  // CORAL: B button
-        L2(0.07375, Units.degreesToRadians(122.539)),  // CORAL: A button
-        L1(0.572, Units.degreesToRadians(238.535)),  // CORAL: X in
-        START(Units.inchesToMeters(0.468), Units.degreesToRadians(90.089));  // startup only
+        HIGH_DESCORE(0.630, Units.degreesToRadians(130.693),
+                     Units.inchesToMeters(15.257), Units.degreesToRadians(127.820)),  // ALGAE: B button
+        LOW_DESCORE(0.254, Units.degreesToRadians(133.945),
+                    Units.inchesToMeters(0.815), Units.degreesToRadians(127.742)),  // ALGAE: A button
+        CORAL_COLLECT(0.405, Units.degreesToRadians(267.809),
+                      Units.inchesToMeters(17.069), Units.degreesToRadians(267.809)),  // CORAL: RS button toggle
+        STOW(Units.inchesToMeters(1.901), Units.degreesToRadians(89.913),
+             Units.inchesToMeters(1.901), Units.degreesToRadians(89.913)),  // RS button toggle
+        ALGAE_COLLECT(0.0214, Units.degreesToRadians(177.211),
+                      0.0214, Units.degreesToRadians(177.211)),  // ALGAE: RS button toggle
+        ALGAE_PASSOFF(Units.inchesToMeters(42.344), Units.degreesToRadians(287.809),
+                      Units.inchesToMeters(42.344), Units.degreesToRadians(287.809)),
+        ALGAE_PRESCORE(Units.inchesToMeters(47.244), Units.degreesToRadians(20),
+                       Units.inchesToMeters(47.244), Units.degreesToRadians(20)),  // ALGAE: Y button
+        ALGAE_SCORE(Units.inchesToMeters(47.344), Units.degreesToRadians(89.913),
+                    Units.inchesToMeters(47.344), Units.degreesToRadians(89.913)),  // ALGAE: Y button
+        L4(Units.inchesToMeters(42.344), Units.degreesToRadians(120.548),
+           Units.inchesToMeters(40.344), Units.degreesToRadians(120.548)),  // CORAL: Y button
+        L3(0.479, Units.degreesToRadians(125.551),
+           Units.inchesToMeters(17.500), Units.degreesToRadians(124.398)),  // CORAL: B button
+        L2(0.07375, Units.degreesToRadians(122.539),
+           Units.inchesToMeters(1.364), Units.degreesToRadians(124.791)),  // CORAL: A button
+        L1(0.572, Units.degreesToRadians(238.535),
+           0.572, Units.degreesToRadians(238.535)),  // CORAL: X in
+        START(Units.inchesToMeters(0.468), Units.degreesToRadians(90.089),
+              Units.inchesToMeters(0.468), Units.degreesToRadians(90.089));  // startup only
 
         public final double elev;
         public final double arm;
         public final WindmillState state;
 
-        TrajectoryState(double elev, double arm) {
-            this.elev = elev;
-            this.arm = arm;
+        TrajectoryState(double elevAEE, double armAEE, double elevSEE, double armSEE) {
+            this.elev = (AEE_FEATURE) ? elevAEE : elevSEE;
+            this.arm = (AEE_FEATURE) ? armAEE : armSEE;
             this.state = new WindmillState(
                 0,
                 new WindmillState.ElevatorState(elev, 0, 0),
