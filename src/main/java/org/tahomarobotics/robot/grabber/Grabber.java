@@ -41,14 +41,17 @@ import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.util.game.GamePiece;
 import org.tahomarobotics.robot.util.signals.LoggedStatusSignal;
 import org.tahomarobotics.robot.util.sysid.SysIdTests;
+import org.tahomarobotics.robot.windmill.Windmill;
 import org.tahomarobotics.robot.windmill.WindmillConstants;
 import org.tahomarobotics.robot.windmill.commands.WindmillMoveCommand;
+import org.tahomarobotics.robot.windmill.commands.WindmillTrajectories;
 
 import java.util.List;
 
 import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Volts;
 import static org.tahomarobotics.robot.grabber.GrabberConstants.*;
+import static org.tahomarobotics.robot.windmill.WindmillConstants.LARGE_PULLBACK;
 
 public class Grabber extends SubsystemIF {
     private final static Grabber INSTANCE = new Grabber();
@@ -154,10 +157,11 @@ public class Grabber extends SubsystemIF {
                 belowTimer.restart();
             }
         }
-        
+
         if (algaeCollectionTimer.hasElapsed(ALGAE_COLLECTION_DELAY)) {
             transitionToAlgaeHolding();
-            WindmillMoveCommand.fromTo(WindmillConstants.TrajectoryState.ALGAE_COLLECT, WindmillConstants.TrajectoryState.STOW).orElseGet(Commands::none).schedule();
+
+            Windmill.getInstance().createTransitionCommand(((WindmillConstants.TrajectoryState.STOW))).schedule();
 
             algaeCollectionTimer.stop();
             algaeCollectionTimer.reset();
@@ -197,7 +201,6 @@ public class Grabber extends SubsystemIF {
         if (!isArmAtPassing() || isHoldingCoral()) { return; }
         setTargetState(GrabberState.CORAL_COLLECTING);
     }
-
     public void transitionToScoring() {
         setTargetState(GrabberState.SCORING);
         coralCollectionTimer.stop();

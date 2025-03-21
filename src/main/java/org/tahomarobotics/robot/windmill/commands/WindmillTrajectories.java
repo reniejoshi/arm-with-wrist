@@ -46,6 +46,8 @@ public class WindmillTrajectories {
 
     static {
         WindmillState collectLift = createWindmillState(Units.inchesToMeters(30), Units.degreesToRadians(267.809));
+        WindmillState lowDescoreCollectPullback = createWindmillState(TrajectoryState.LOW_DESCORE.elev + ALGAE_PULLBACK_ELEVATOR, TrajectoryState.LOW_DESCORE.arm - ALGAE_PULLBACK_ARM);
+        WindmillState highDescoreCollectPullback = createWindmillState(TrajectoryState.HIGH_DESCORE.elev + ALGAE_PULLBACK_ELEVATOR, TrajectoryState.HIGH_DESCORE.arm - ALGAE_PULLBACK_ARM);
 
         // Algae
         create(TrajectoryState.CORAL_COLLECT, TrajectoryState.HIGH_DESCORE, new WindmillState[]{collectLift});
@@ -57,8 +59,8 @@ public class WindmillTrajectories {
 
         create(TrajectoryState.STOW, TrajectoryState.LOW_DESCORE);
         create(TrajectoryState.STOW, TrajectoryState.HIGH_DESCORE);
-        create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.LOW_DESCORE, TrajectoryState.STOW);
-        create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.HIGH_DESCORE, TrajectoryState.STOW);
+        create(TrajectoryState.LOW_DESCORE, LARGE_PULLBACK, TrajectoryState.STOW, WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS);
+        create(TrajectoryState.HIGH_DESCORE, LARGE_PULLBACK, TrajectoryState.STOW, WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS);
 
         create(TrajectoryState.HIGH_DESCORE, SMALL_PULLBACK, TrajectoryState.ALGAE_PRESCORE, WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS);
         create(TrajectoryState.LOW_DESCORE, SMALL_PULLBACK, TrajectoryState.ALGAE_PRESCORE, WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS);

@@ -84,6 +84,9 @@ public class WindmillConstants {
     public static final double STANDARD_PULLBACK = Units.degreesToRadians(20.0);
     public static final double LARGE_PULLBACK = Units.degreesToRadians(30.0);
 
+    public static final double ALGAE_PULLBACK_ARM = Units.degreesToRadians(30);
+    public static final double ALGAE_PULLBACK_ELEVATOR = 0;
+
     // Gearing
     public static final double ELEVATOR_GEAR_REDUCTION;
 
