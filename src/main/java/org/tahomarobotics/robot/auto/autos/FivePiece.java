@@ -36,7 +36,6 @@ import org.tahomarobotics.robot.collector.CollectorCommands;
 import org.tahomarobotics.robot.grabber.Grabber;
 import org.tahomarobotics.robot.indexer.Indexer;
 import org.tahomarobotics.robot.windmill.Windmill;
-import org.tahomarobotics.robot.windmill.commands.WindmillCommands;
 import org.tahomarobotics.robot.windmill.commands.WindmillMoveCommand;
 import org.tinylog.Logger;
 
@@ -50,7 +49,7 @@ public class FivePiece extends SequentialCommandGroup {
 
     private static final double SCORING_DISTANCE = Units.inchesToMeters(3);
     private static final double ARM_UP_DISTANCE = AutonomousConstants.APPROACH_DISTANCE_BLEND_FACTOR + Units.inchesToMeters(6);
-    private static final double SCORING_TIME = 0.25;
+    private static final double SCORING_TIME = 0.1;
 
     // -- Requirements --
 
@@ -74,18 +73,8 @@ public class FivePiece extends SequentialCommandGroup {
         Timer timer = new Timer();
         addCommands(
             Commands.runOnce(timer::restart),
-            Commands.parallel(
-                // Assuming proper starting state, this will take several cycles.
-                WindmillCommands.createElevatorZeroCommand(Windmill.getInstance()),
-                CollectorCommands.createZeroCommand(Collector.getInstance())
-            ),
-            // Assuming proper starting state, this will take one cycle.
-//            Commands.runOnce(() -> {
-//                windmill.calibrate();
-//                collector.zero();
-//            }),
             // Drive to our first scoring position then score
-            driveToPoleThenScore(isLeft ? 'J' : 'E', () -> alliance == DriverStation.Alliance.Red && isLeft ? Units.inchesToMeters(1) : 0),
+            driveToFirstPoleThenScore(isLeft ? 'J' : 'E', () -> alliance == DriverStation.Alliance.Red && isLeft ? Units.inchesToMeters(1) : 0),
             driveToCoralStationAndCollect(isLeft),
             // Drive to the second scoring position then score
             driveToPoleThenScoreWhileCollecting(isLeft ? 'K' : 'D'),
@@ -108,11 +97,11 @@ public class FivePiece extends SequentialCommandGroup {
         );
     }
 
-    public Command driveToPoleThenScore(char pole) {
-        return driveToPoleThenScore(pole, () -> 0);
+    public Command driveToFirstPoleThenScore(char pole) {
+        return driveToFirstPoleThenScore(pole, () -> 0);
     }
 
-    public Command driveToPoleThenScore(char pole, DoubleSupplier fudge) {
+    public Command driveToFirstPoleThenScore(char pole, DoubleSupplier fudge) {
         // Drive to the scoring position
         DriveToPoseV4Command dtp = AutonomousConstants.getObjectiveForPole(pole - 'A', alliance).fudgeY(fudge.getAsDouble()).driveToPoseV4Command();
 
@@ -120,11 +109,15 @@ public class FivePiece extends SequentialCommandGroup {
         Command stowToL4 = WindmillMoveCommand.fromTo(STOW, L4).orElseThrow();
 
         // Score grabber
-        Command scoreGrabber = grabber.runOnce(grabber::transitionToScoring).andThen(Commands.waitSeconds(SCORING_TIME)).andThen(grabber::transitionToDisabled);
+        Command scoreGrabber = grabber.runOnce(grabber::transitionToScoring).andThen(Commands.waitSeconds(SCORING_TIME));
 
         Timer timer = new Timer();
         return Commands.parallel(
             Commands.runOnce(timer::restart),
+            // Calibrate
+            CollectorCommands.createZeroCommand(Collector.getInstance()),
+            Commands.runOnce(windmill::calibrate),
+            // Drive
             dtp,
             dtp.runWhen(() -> dtp.getTargetWaypoint() == 0 && dtp.getDistanceToWaypoint() <= ARM_UP_DISTANCE, stowToL4),
             dtp.runWhen(
@@ -146,7 +139,7 @@ public class FivePiece extends SequentialCommandGroup {
         Command stowToL4 = WindmillMoveCommand.fromTo(STOW, L4).orElseThrow();
 
         // Score grabber
-        Command scoreGrabber = grabber.runOnce(grabber::transitionToScoring).andThen(Commands.waitSeconds(SCORING_TIME)).andThen(grabber::transitionToDisabled);
+        Command scoreGrabber = grabber.runOnce(grabber::transitionToScoring).andThen(Commands.waitSeconds(SCORING_TIME));
 
         Timer timer = new Timer();
         return Commands.race(
