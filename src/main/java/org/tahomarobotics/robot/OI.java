@@ -76,14 +76,13 @@ public class OI extends SubsystemIF {
     // -- Subsystems --
 
     private final Indexer indexer = Indexer.getInstance();
-    private final Climber climber = Climber.getInstance();
     private final Collector collector = Collector.getInstance();
     private final Chassis chassis = Chassis.getInstance();
     private final Windmill windmill = Windmill.getInstance();
     private final Grabber grabber = Grabber.getInstance();
     private final LED led = LED.getInstance();
 
-    private final List<SubsystemIF> subsystems = List.of(indexer, collector, chassis, climber, windmill, grabber, led);
+    private final List<SubsystemIF> subsystems;
 
     // -- Controllers --
 
@@ -93,6 +92,11 @@ public class OI extends SubsystemIF {
     // -- Initialization --
 
     private OI() {
+
+        subsystems = RobotConfiguration.isClimberEnabled() ?
+            List.of(indexer, collector, chassis, windmill, grabber, led, Climber.getInstance()) :
+            List.of(indexer, collector, chassis, windmill, grabber, led);
+
         CommandScheduler.getInstance().unregisterSubsystem(this);
         DriverStation.silenceJoystickConnectionWarning(true);
 
@@ -230,8 +234,11 @@ public class OI extends SubsystemIF {
         controller.leftTrigger().onTrue(grabberCommands.getFirst()).onFalse(grabberCommands.getSecond());
 
         //// Climber Rollers
-        controller.leftTrigger().onTrue(climber.runOnce(climber::runRollers).onlyIf(() -> climber.getClimbState() == Climber.ClimberState.DEPLOYED))
-                  .onFalse(climber.runOnce(climber::disableRollers));
+        if (RobotConfiguration.isClimberEnabled()) {
+            Climber climber = Climber.getInstance();
+            controller.leftTrigger().onTrue(climber.runOnce(climber::runRollers).onlyIf(() -> climber.getClimbState() == Climber.ClimberState.DEPLOYED))
+                      .onFalse(climber.runOnce(climber::disableRollers));
+        }
 
         // Right - Eject everything
         Pair<Command, Command> scoreCommands = CollectorCommands.createEjectCommands(collector);
@@ -250,8 +257,9 @@ public class OI extends SubsystemIF {
         // -- Start & Back --
 
         // Start
-        controller.start().onTrue(ClimberCommands.getClimberCommand());
-
+        if (RobotConfiguration.isClimberEnabled()) {
+            controller.start().onTrue(ClimberCommands.getClimberCommand());
+        }
         // -- ABXY --
 
         // A - L2 / Low Algae De-score

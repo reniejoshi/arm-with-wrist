@@ -22,12 +22,19 @@
 
 package org.tahomarobotics.robot;
 
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Filesystem;
 
 import java.io.File;
 
 public class RobotConfiguration {
     // -- Staging Feature Flags --
+
+    private static final DigitalInput isClimberEnabled = new DigitalInput(RobotMap.CLIMBER_ENABLED_JUMPER);
+
+    public static boolean isClimberEnabled() {
+        return isClimberEnabled.get();
+    }
 
     public static final boolean FEATURE_CORAL_DETECTION = true;
     public static final boolean AEE_FEATURE = false;

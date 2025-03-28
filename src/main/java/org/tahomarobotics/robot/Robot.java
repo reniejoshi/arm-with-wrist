@@ -43,29 +43,21 @@ import org.tahomarobotics.robot.collector.Collector;
 import org.tahomarobotics.robot.grabber.Grabber;
 import org.tahomarobotics.robot.indexer.Indexer;
 import org.tahomarobotics.robot.lights.LED;
+import org.tahomarobotics.robot.util.ImmutableLazyOptionalMap;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tahomarobotics.robot.vision.Vision;
 import org.tahomarobotics.robot.windmill.Windmill;
 import org.tahomarobotics.robot.windmill.commands.WindmillTrajectories;
 import org.tinylog.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Robot extends LoggedRobot {
     // Subsystems
 
-    private final List<SubsystemIF> subsystems = List.of(
-        LED.getInstance().initialize(),
-        Chassis.getInstance().initialize(),
-        Autonomous.getInstance().initialize(),
-        Vision.getInstance().initialize(),
-        Windmill.getInstance().initialize(),
-        Indexer.getInstance().initialize(),
-        Collector.getInstance().initialize(),
-        Climber.getInstance().initialize(),
-        Grabber.getInstance().initialize(),
-        OI.getInstance().initialize()
-    );
+    private final List<SubsystemIF> subsystems;
 
     // Robot
 
@@ -73,6 +65,23 @@ public class Robot extends LoggedRobot {
         // Disable watchdogs
         disableWatchdog(this, IterativeRobotBase.class);
         disableWatchdog(CommandScheduler.getInstance(), CommandScheduler.class);
+
+        List<SubsystemIF> subsystems = new ArrayList<>();
+
+        subsystems.add(LED.getInstance().initialize());
+        subsystems.add(Chassis.getInstance().initialize());
+        subsystems.add(Autonomous.getInstance().initialize());
+        subsystems.add(Vision.getInstance().initialize());
+        subsystems.add(Windmill.getInstance().initialize());
+        subsystems.add(Indexer.getInstance().initialize());
+        subsystems.add(Collector.getInstance().initialize());
+        subsystems.add(Grabber.getInstance().initialize());
+        subsystems.add(OI.getInstance().initialize());
+
+        if (RobotConfiguration.isClimberEnabled()) {
+            subsystems.add(Climber.getInstance().initialize());
+        }
+        this.subsystems = subsystems.stream().collect(Collectors.toUnmodifiableList());
 
         // Auto log outputs
         subsystems.forEach(AutoLogOutputManager::addObject);

@@ -43,7 +43,11 @@ public class CalibrationData<T extends Serializable> {
     public CalibrationData(String filename, T defaultData) {
         this.data = castData(defaultData);
         this.file = new File(HOME_DIR, filename);
-        readCalibrationFile();
+        if (file.exists()) {
+            readCalibrationFile();
+        } else {
+            Logger.error("Calibration file does not exist: <{}>", file.getAbsolutePath());
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -51,7 +55,7 @@ public class CalibrationData<T extends Serializable> {
         try (ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream(file))) {
             data = castData((T) inputStream.readObject());
             Logger.info("Successfully read calibration data <{}> -> {}", file.getAbsolutePath(), formatData());
-        } catch (Exception e) {
+        } catch(Exception e) {
             Logger.error(e, "Failed to read calibration data <{}>", file.getAbsolutePath());
         }
     }

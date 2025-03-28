@@ -29,6 +29,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.FunctionalCommand;
+import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.chassis.ChassisConstants;
 import org.tahomarobotics.robot.climber.Climber;
@@ -221,7 +222,9 @@ public class SystemCheck {
         SmartDashboard.putData("Checks/Run Collector", createCollectorTestCommand(Collector.getInstance()));
         SmartDashboard.putData("Checks/Run Indexer", createIndexerTestCommand(Indexer.getInstance()));
         SmartDashboard.putData("Checks/Run Grabber", createGrabberTestCommand(Grabber.getInstance()));
-        SmartDashboard.putData("Checks/Run Climber", createClimberTestCommand(Climber.getInstance()));
+        if (RobotConfiguration.isClimberEnabled()) {
+            SmartDashboard.putData("Checks/Run Climber", createClimberTestCommand(Climber.getInstance()));
+        }
         SmartDashboard.putData("Checks/Run Windmill", createWindmillTestCommand(Windmill.getInstance()));
         SmartDashboard.putData("Checks/Run Chassis", createChassisTestCommand(Chassis.getInstance()));
         SmartDashboard.putData("Checks/Run Windmill Trajectories", createWindmillTrajectoryTestCommand(Windmill.getInstance()));

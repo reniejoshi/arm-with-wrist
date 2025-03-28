@@ -31,7 +31,7 @@ public final class RobotMap {
 
     public final static int BEAM_BREAK = 0;
 
-    public final static int JUMPER = 2;
+    public final static int CLIMBER_ENABLED_JUMPER = 2;
     public final static SwerveModuleDescriptor FRONT_LEFT_MOD = new SwerveModuleDescriptor(
         "Front Left", FRONT_LEFT_OFFSET, 1, 11, 21);
     public final static SwerveModuleDescriptor FRONT_RIGHT_MOD = new SwerveModuleDescriptor(

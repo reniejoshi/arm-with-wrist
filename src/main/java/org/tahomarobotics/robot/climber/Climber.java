@@ -67,8 +67,6 @@ public class Climber extends SubsystemIF {
 
     private final DigitalInput limitSwitch = new DigitalInput(RobotMap.CLIMBER_LIMIT_SWITCH);
 
-    private final DigitalInput jumper = new DigitalInput(RobotMap.JUMPER);
-
     private final boolean USE_LIMIT_SWITCH = false;
 
     // Status Signals
@@ -163,86 +161,66 @@ public class Climber extends SubsystemIF {
     // -- Climb Control --
 
     public void wiggle() {
-        if(jumper.get()){
-            targetPosition -= 0.01;
+        targetPosition -= 0.01;
 
-            Logger.info("WIGGLING");
-            climberMotor.setControl(positionControl.withPosition(targetPosition).withSlot(0));
-        }
+        Logger.info("WIGGLING");
+        climberMotor.setControl(positionControl.withPosition(targetPosition).withSlot(0));
     }
 
     public void stow() {
-        if(jumper.get()){
         targetPosition = ClimberConstants.STOW_POSITION;
 
         Logger.info("Climber going to STOW");
         climberMotor.setControl(positionControl.withPosition(targetPosition).withSlot(0));
 
         climbState = ClimberState.STOWED;
-        }
     }
 
     public void deploy() {
-        if(jumper.get()){
         targetPosition = ClimberConstants.DEPLOY_POSITION;
 
         Logger.info("Climber going to DEPLOY");
 //        climberMotor.setControl(positionControl.withPosition(targetPosition).withSlot(0));
 
         climbState = ClimberState.DEPLOYED;
-        }
     }
 
     public void climb() {
-        if(jumper.get()){
         targetPosition = ClimberConstants.CLIMB_POSITION;
 
         Logger.info("Climber going to CLIMB");
         climberMotor.setControl(positionControl.withPosition(targetPosition).withSlot(1));
 
         climbState = ClimberState.CLIMBED;
-        }
     }
 
     public void disengageSolenoid() {
-        if(jumper.get()){
         Logger.info("Disengaged solenoid...");
         ratchetSolenoid.set(VictorSPXControlMode.PercentOutput, ClimberConstants.RATCHET_SOLENOID_DEPLOY_PERCENTAGE);
-        }
     }
 
     public void engageSolenoid() {
-            if(jumper.get()){
-                Logger.info("Engaged solenoid...");
-                ratchetSolenoid.set(VictorSPXControlMode.PercentOutput, 0);
-            }
-        }
+        Logger.info("Engaged solenoid...");
+        ratchetSolenoid.set(VictorSPXControlMode.PercentOutput, 0);
+    }
 
     public void runRollers() {
-        if(jumper.get()){
         Logger.info("Running rollers...");
         climberRoller.set(-Math.PI / 10d);
-        }
     }
 
     public void disableRollers() {
-        if(jumper.get()){
         Logger.info("Disabling rollers...");
         climberRoller.set(0);
-        }
     }
 
     public void disableClimberMotors() {
-        if(jumper.get()){
         climberMotor.stopMotor();
-        }
     }
 
     public void zeroPosition() {
-        if(jumper.get()){
         climberMotor.setPosition(ClimberConstants.ZERO_POSITION);
         climberFollower.setPosition(ClimberConstants.ZERO_POSITION);
-        }
     }
 
     public void toggleCoast() {
