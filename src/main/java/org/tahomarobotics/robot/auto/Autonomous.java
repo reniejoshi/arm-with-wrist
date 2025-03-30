@@ -23,41 +23,61 @@
 package org.tahomarobotics.robot.auto;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import org.tahomarobotics.robot.auto.autos.FivePiece;
+import org.tahomarobotics.robot.auto.autos.AssembledAuto;
 import org.tahomarobotics.robot.auto.autos.Strait;
 import org.tahomarobotics.robot.chassis.Chassis;
 import org.tahomarobotics.robot.util.SubsystemIF;
 import org.tinylog.Logger;
 
+import java.util.LinkedHashMap;
+import java.util.function.DoubleSupplier;
+
 public class Autonomous extends SubsystemIF {
     private static final Autonomous INSTANCE = new Autonomous();
 
-    private final Command cachedCommandLeftBlue, cachedCommandRightBlue;
-    private final Command cachedCommandLeftRed, cachedCommandRightRed;
+    private final Command cachedFivePieceCommandLeftBlue, cachedFivePieceCommandRightBlue;
+    private final Command cachedFivePieceCommandLeftRed, cachedFivePieceCommandRightRed;
+    private final Command cachedJackFivePieceCommandRightRed, cachedJackFivePieceCommandRightBlue;
+    private final Command cachedJackFivePieceCommandLeftRed, cachedJackFivePieceCommandLeftBlue;
     private final SendableChooser<Command> autoChooser;
 
     private Autonomous() {
         autoChooser = new SendableChooser<>();
         autoChooser.setDefaultOption("No-Op", Commands.none().withName("No-Op"));
 
-        cachedCommandLeftBlue = new FivePiece(true, DriverStation.Alliance.Blue).withName("5-Piece Left");
-        cachedCommandLeftRed = new FivePiece(true, DriverStation.Alliance.Red).withName("5-Piece Left");
+        cachedFivePieceCommandLeftBlue = assembleFivePiece(true, DriverStation.Alliance.Blue);
+        cachedFivePieceCommandLeftRed = assembleFivePiece(true, DriverStation.Alliance.Red);
 
-        cachedCommandRightBlue = new FivePiece(false, DriverStation.Alliance.Blue).withName("5-Piece Right");
-        cachedCommandRightRed = new FivePiece(false, DriverStation.Alliance.Red).withName("5-Piece Right");
+        cachedFivePieceCommandRightBlue = assembleFivePiece(false, DriverStation.Alliance.Blue);
+        cachedFivePieceCommandRightRed = assembleFivePiece(false, DriverStation.Alliance.Red);
+
+        cachedJackFivePieceCommandLeftBlue = assembleCompatibleFivePiece(true, DriverStation.Alliance.Blue);
+        cachedJackFivePieceCommandLeftRed = assembleCompatibleFivePiece(true, DriverStation.Alliance.Red);
+
+        cachedJackFivePieceCommandRightBlue = assembleCompatibleFivePiece(false, DriverStation.Alliance.Blue);
+        cachedJackFivePieceCommandRightRed = assembleCompatibleFivePiece(false, DriverStation.Alliance.Red);
 
         autoChooser.addOption(
             "5-Piece Left", Commands.deferredProxy(() -> DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ?
-                cachedCommandLeftRed : cachedCommandLeftBlue).withName("5-Piece Left")
+                cachedFivePieceCommandLeftRed : cachedFivePieceCommandLeftBlue).withName("5-Piece Left")
         );
         autoChooser.addOption(
             "5-Piece Right", Commands.deferredProxy(() -> DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ?
-                cachedCommandRightRed : cachedCommandRightBlue).withName("5-Piece Right")
+                cachedFivePieceCommandRightRed : cachedFivePieceCommandRightBlue).withName("5-Piece Right")
+        );
+        autoChooser.addOption(
+            "Compatible 5-Piece Left", Commands.deferredProxy(() -> DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ?
+                cachedJackFivePieceCommandLeftRed : cachedJackFivePieceCommandLeftBlue).withName("Compatible 5-Piece Left")
+        );
+        autoChooser.addOption(
+            "Compatible 5-Piece Right", Commands.deferredProxy(() -> DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ?
+                cachedJackFivePieceCommandRightRed : cachedJackFivePieceCommandRightBlue).withName("Compatible 5-Piece Right")
         );
         autoChooser.addOption(
             "Strait", Commands.deferredProxy(() -> new Strait(DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue))).withName("Strait")
@@ -77,6 +97,24 @@ public class Autonomous extends SubsystemIF {
 
     public Command getSelectedAuto() {
         return autoChooser.getSelected();
+    }
+
+    public Command assembleFivePiece(boolean isLeft, DriverStation.Alliance alliance) {
+        LinkedHashMap<Character, DoubleSupplier> scorePositions = new LinkedHashMap<>();
+        scorePositions.put('J', () -> alliance == DriverStation.Alliance.Red && isLeft ? Units.inchesToMeters(1) : 0);
+        scorePositions.put('K', () -> alliance == DriverStation.Alliance.Red && isLeft ? Units.inchesToMeters(2) : 0);
+        scorePositions.put('L', () -> alliance == DriverStation.Alliance.Red && isLeft ? Units.inchesToMeters(2) : 0);
+        scorePositions.put('A', () -> 0);
+        return new AssembledAuto(isLeft, scorePositions, alliance, "Five-Piece");
+    }
+
+    public Command assembleCompatibleFivePiece(boolean isLeft, DriverStation.Alliance alliance) {
+        LinkedHashMap<Character, DoubleSupplier> scorePositions = new LinkedHashMap<>();
+        scorePositions.put('I', () -> 0);
+        scorePositions.put('J', () -> alliance == DriverStation.Alliance.Red && isLeft ? Units.inchesToMeters(1) : 0);
+        scorePositions.put('K', () -> alliance == DriverStation.Alliance.Red && isLeft ? Units.inchesToMeters(2) : 0);
+        scorePositions.put('L', () -> alliance == DriverStation.Alliance.Red && isLeft ? Units.inchesToMeters(2) : 0);
+        return new AssembledAuto(isLeft, scorePositions, alliance, "Compatible Five-Piece");
     }
 
     public void onAutoChange(Command command) {

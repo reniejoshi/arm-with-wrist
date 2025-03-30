@@ -28,7 +28,6 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import org.tahomarobotics.robot.Robot;
 import org.tahomarobotics.robot.RobotConfiguration;
 import org.tahomarobotics.robot.auto.AutonomousConstants;
 import org.tahomarobotics.robot.auto.commands.DriveToPoseV4Command;
@@ -41,12 +40,13 @@ import org.tahomarobotics.robot.windmill.Windmill;
 import org.tahomarobotics.robot.windmill.commands.WindmillMoveCommand;
 import org.tinylog.Logger;
 
+import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.function.DoubleSupplier;
 
 import static org.tahomarobotics.robot.windmill.WindmillConstants.TrajectoryState.*;
 
-public class FivePiece extends SequentialCommandGroup {
+public class AssembledAuto extends SequentialCommandGroup {
     // -- Constants --
 
     private static final double SCORING_DISTANCE = Units.inchesToMeters(3);
@@ -69,25 +69,47 @@ public class FivePiece extends SequentialCommandGroup {
 
     // -- Initialization --
 
-    public FivePiece(boolean isLeft, DriverStation.Alliance alliance) {
-        setName("Five-Piece " + (isLeft ? "Left" : "Right"));
+    public AssembledAuto(boolean isLeft, LinkedHashMap<Character, DoubleSupplier> scorePositions, DriverStation.Alliance alliance, String name) {
+        setName(name + " " + (isLeft ? "Left" : "Right"));
 
         this.alliance = alliance;
 
         Timer timer = new Timer();
         addCommands(
-            Commands.runOnce(timer::restart),
-            // Drive to our first scoring position then score
-            driveToFirstPoleThenScore(isLeft ? 'J' : 'E', () -> alliance == DriverStation.Alliance.Red && isLeft ? Units.inchesToMeters(1) : 0),
-            driveToCoralAndCollect(isLeft),
-            // Drive to the second scoring position then score
-            driveToPoleThenScoreWhileCollecting(isLeft ? 'K' : 'D', () -> alliance == DriverStation.Alliance.Blue && !isLeft ? Units.inchesToMeters(2) : 0),
-            driveToCoralAndCollect(isLeft),
-            // Drive to the third scoring position then score
-            driveToPoleThenScoreWhileCollecting(isLeft ? 'L' : 'C', () -> alliance == DriverStation.Alliance.Blue && !isLeft ? Units.inchesToMeters(2) : 0),
-            driveToCoralAndCollect(isLeft),
-            // Drive to the fourth scoring position then score
-            driveToPoleThenScoreWhileCollecting(isLeft ? 'A' : 'B'),
+            Commands.runOnce(timer::restart)
+        );
+
+        if (!isLeft) {
+            Character[] keys = scorePositions.keySet().toArray(new Character[0]);
+            DoubleSupplier[] fudgeSuppliers = scorePositions.values().toArray(new DoubleSupplier[0]);
+            scorePositions.clear();
+
+            // Flip characters to the right side
+            for (int i = 0; i < keys.length; i++) {
+                if (keys[i] == 'A') {
+                    keys[i] = 'B';
+                } else {
+                    keys[i] = (char) ('C' + ('L' - keys[i]));
+                }
+                scorePositions.put(keys[i], fudgeSuppliers[i]);
+            }
+        }
+
+        // Add first score position (this uses a different command than the rest).
+        addCommands(driveToFirstPoleThenScore(scorePositions.keySet().toArray(new Character[0])[0], scorePositions.get(scorePositions.keySet().toArray()[0])));
+        
+        boolean firstKey = true;
+        for (Character character : scorePositions.keySet()) {
+            if (!firstKey) {
+                addCommands(
+                    driveToCoralAndCollect(isLeft),
+                    driveToPoleThenScoreWhileCollecting(character, scorePositions.get(character))
+                );
+            }
+            firstKey = false;
+        }
+
+        addCommands(
             // Reset the robot upon finishing
             Commands.parallel(
                 collector.runOnce(() -> {
@@ -126,7 +148,7 @@ public class FivePiece extends SequentialCommandGroup {
             dtp.runWhen(() -> dtp.getTargetWaypoint() == 0 && dtp.getDistanceToWaypoint() <= ARM_UP_DISTANCE, stowToL4),
             dtp.runWhen(
                 () -> dtp.getTargetWaypoint() == 1 && dtp.getDistanceToWaypoint() <= SCORING_DISTANCE,
-                scoreGrabber.andThen(Commands.runOnce(() -> Logger.info("Scored grabber.")))
+                scoreGrabber.andThen(Commands.runOnce(() -> Logger.info("Scored grabber.")).andThen(Commands.runOnce(dtp::cancel)))
             )
         ).andThen(Commands.runOnce(() -> Logger.info("Driving to {} and scoring took {} seconds.", pole, timer.get())));
     }
@@ -161,8 +183,8 @@ public class FivePiece extends SequentialCommandGroup {
                             // Score the coral if collected
                             dtp.runWhen(() -> dtp.getTargetWaypoint() == 0 && dtp.getDistanceToWaypoint() <= ARM_UP_DISTANCE, stowToL4)
                         ),
-                    dtp.runWhen(() -> dtp.getTargetWaypoint() == 1 && dtp.getDistanceToWaypoint() <= SCORING_DISTANCE, scoreGrabber)
-                ))
+                    dtp.runWhen(() -> dtp.getTargetWaypoint() == 1 && dtp.getDistanceToWaypoint() <= SCORING_DISTANCE, scoreGrabber.andThen(Commands.runOnce(dtp::cancel)))
+                ).onlyIf(() -> dtp.getDistanceToWaypoint() > ARM_DOWN_DISTANCE)) // Only move the arm and score the coral if it is safe to do so
         ).andThen(Commands.runOnce(() -> Logger.info("Driving to {} and scoring took {} seconds.", pole, timer.get())));
     }
 
@@ -205,7 +227,7 @@ public class FivePiece extends SequentialCommandGroup {
                 return Commands.parallel(
                     Commands.runOnce(timer::restart),
                     // Drive to the coral station using the current translation of the chassis
-                    dtp.withTimeout(5).until((RobotConfiguration.FEATURE_ALGAE_END_EFFECTOR) ? grabber::isInRange : indexer::isBeanBakeTripped),
+                    dtp.withTimeout(5).until((RobotConfiguration.FEATURE_BEAN_BAKE) ? grabber::isCoralDetected : indexer::isBeanBakeTripped),
                     dtp.runWhen(
                            () -> dtp.getDistanceFromStart() > ARM_DOWN_DISTANCE,
                            WindmillMoveCommand.fromTo(L4, CORAL_COLLECT).orElseThrow()
