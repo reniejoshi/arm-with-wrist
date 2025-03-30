@@ -70,7 +70,7 @@ public class WindmillTrajectories {
         create(TrajectoryState.ALGAE_SCORE, TrajectoryState.STOW);
         create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.ALGAE_PRESCORE, TrajectoryState.STOW);
         create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.ALGAE_COLLECT, TrajectoryState.STOW);
-        create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.ALGAE_PRESCORE, TrajectoryState.ALGAE_SCORE);
+        create(TrajectoryState.ALGAE_PRESCORE, TrajectoryState.ALGAE_SCORE);
         create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.STOW, TrajectoryState.ALGAE_PROCESSOR);
         create(WindmillTrajectory.WindmillConstraints.ALGAE_CONSTRAINTS, TrajectoryState.ALGAE_PROCESSOR, TrajectoryState.STOW);
 
