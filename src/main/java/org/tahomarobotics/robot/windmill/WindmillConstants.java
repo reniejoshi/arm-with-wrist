@@ -40,7 +40,7 @@ public final class WindmillConstants {
                      Units.inchesToMeters(15.257), Units.degreesToRadians(127.820)),  // ALGAE: B button
         LOW_DESCORE(0.254, Units.degreesToRadians(133.945),
                     Units.inchesToMeters(0.815), Units.degreesToRadians(127.742)),  // ALGAE: A button
-        CORAL_COLLECT(0.430, Units.degreesToRadians(-92.000),
+        CORAL_COLLECT(0.445, Units.degreesToRadians(-96.15234375),
                       Units.inchesToMeters(17.069), Units.degreesToRadians(-92.191)),  // CORAL: RS button toggle
         STOW(Units.inchesToMeters(1.901), Units.degreesToRadians(89.913),
              Units.inchesToMeters(1.901), Units.degreesToRadians(89.913)),  // RS button toggle

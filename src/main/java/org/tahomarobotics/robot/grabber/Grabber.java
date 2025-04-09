@@ -200,12 +200,12 @@ public class Grabber extends SubsystemIF {
     }
 
     public void transitionToAlgaeCollecting() {
-        if (!isArmAtPassing() || isHoldingCoral()) { return; }
+        if (isHoldingCoral()) { return; }
         setTargetState(GrabberState.ALGAE_COLLECTING);
     }
 
     public void transitionToCoralCollecting() {
-        if (!isArmAtPassing() || isHoldingCoral()) { return; }
+        if (isHoldingCoral()) { return; }
         setTargetState(GrabberState.CORAL_COLLECTING);
     }
 
@@ -238,10 +238,6 @@ public class Grabber extends SubsystemIF {
     }
 
     // -- Getters --
-
-    public boolean isArmAtPassing() {
-        return SmartDashboard.getBoolean("arm at position", true);
-    }
 
     public boolean isHoldingCoral() {
         return state == GrabberState.CORAL_HOLDING;
