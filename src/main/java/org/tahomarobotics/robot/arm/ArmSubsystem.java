@@ -9,6 +9,26 @@ public class ArmSubsystem extends AbstractSubsystem {
     private final TalonFX armMotor = new TalonFX(RobotMap.ARM_MOTOR);
     private final TalonFX wristMotor = new TalonFX(RobotMap.WRIST_MOTOR);
 
+    // Setters
+
+    public void setArmPosition() {
+
+    }
+
+    public void setWristPosition() {
+
+    }
+
+    // Getters
+
+    public void getArmPosition() {
+
+    }
+
+    public void getWristPosition() {
+
+    }
+
     // Implement abstract method in AbstractSubsystem
     @Override
     public void subsystemPeriodic() {
