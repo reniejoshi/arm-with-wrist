@@ -35,6 +35,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
+import org.tahomarobotics.robot.arm.Arm;
 import org.tinylog.Logger;
 
 import java.util.List;
@@ -42,6 +44,8 @@ import java.util.Set;
 import java.util.function.Function;
 
 public class OI {
+    // Subsystems
+    private final Arm arm;
 
     // -- Constants --
 
@@ -57,6 +61,8 @@ public class OI {
     public OI(RobotContainer robotContainer) {
         DriverStation.silenceJoystickConnectionWarning(true);
 
+        this.arm = robotContainer.arm;
+
         configureControllerBindings();
         configureLessImportantControllerBindings();
 
@@ -66,6 +72,10 @@ public class OI {
     // -- Bindings --
 
     public void configureControllerBindings() {
+        /*new Trigger(() -> Math.abs(controller.getRightY()) > DEADBAND)
+            .whileTrue(arm.setArmPosition(controller::getRightY));*/
+
+        arm.setDefaultCommand(arm.setArmPosition(controller::getRightY));
     }
 
     public void configureLessImportantControllerBindings() {
@@ -96,4 +106,6 @@ public class OI {
         value *= Math.pow(Math.abs(value), power - 1);
         return value;
     }
+
+    // TODO: Desensitize getRightY() based on deadband
 }
