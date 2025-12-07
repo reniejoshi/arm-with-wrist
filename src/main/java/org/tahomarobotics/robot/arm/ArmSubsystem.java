@@ -31,9 +31,9 @@ public class ArmSubsystem extends AbstractSubsystem {
         Logger.recordOutput("Arm/Right Y Axis", y);
 
         Angle targetPosition = armMotorPosition.getValue();
-        if (y < 0) {
+        if (y > 0) {
             targetPosition = Degrees.of(armMotorPosition.getValueAsDouble() + 1);
-        } else if (y > 0) {
+        } else if (y < 0) {
             targetPosition = Degrees.of(armMotorPosition.getValueAsDouble() - 1);
         }
         armMotor.setControl(positonControl.withPosition(targetPosition));
