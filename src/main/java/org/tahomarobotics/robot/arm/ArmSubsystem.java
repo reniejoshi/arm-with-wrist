@@ -3,6 +3,7 @@ package org.tahomarobotics.robot.arm;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.Angle;
 import org.littletonrobotics.junction.Logger;
 import org.tahomarobotics.robot.RobotMap;
@@ -30,24 +31,28 @@ public class ArmSubsystem extends AbstractSubsystem {
         double y = rightYSupplier.getAsDouble();
         Logger.recordOutput("Arm/Right Y Axis", y);
 
-        Angle targetPosition = armMotorPosition.getValue();
+        double targetPositionDouble = armMotorPosition.getValueAsDouble();
         if (y > 0) {
-            targetPosition = Degrees.of(armMotorPosition.getValueAsDouble() + ArmConstants.ARM_INCREMENT);
+            targetPositionDouble += ArmConstants.ARM_INCREMENT;
         } else if (y < 0) {
-            targetPosition = Degrees.of(armMotorPosition.getValueAsDouble() - ArmConstants.ARM_INCREMENT);
+            targetPositionDouble -= ArmConstants.ARM_INCREMENT;
         }
+
+        Angle targetPosition = Degrees.of(MathUtil.clamp(targetPositionDouble, ArmConstants.ARM_MIN_POSITION, ArmConstants.ARM_MAX_POSITION));
         armMotor.setControl(positionControl.withPosition(targetPosition));
         Logger.recordOutput("Arm/Target Arm Position", targetPosition);
     }
 
     public void setWristPositionClockwise() {
-        Angle targetPosition = Degrees.of(wristMotorPosition.getValueAsDouble() + ArmConstants.WRIST_INCREMENT);
+        double targetPositionDouble = wristMotorPosition.getValueAsDouble() + ArmConstants.WRIST_INCREMENT;
+        Angle targetPosition = Degrees.of(MathUtil.clamp(targetPositionDouble, ArmConstants.WRIST_MIN_POSITION, ArmConstants.WRIST_MAX_POSITION));
         wristMotor.setControl(positionControl.withPosition(targetPosition));
         Logger.recordOutput("Arm/Target Wrist Position", targetPosition);
     }
 
     public void setWristPositionCounterclockwise() {
-        Angle targetPosition = Degrees.of(wristMotorPosition.getValueAsDouble() - ArmConstants.WRIST_INCREMENT);
+        double targetPositionDouble = wristMotorPosition.getValueAsDouble() - ArmConstants.WRIST_INCREMENT;
+        Angle targetPosition = Degrees.of(MathUtil.clamp(targetPositionDouble, ArmConstants.WRIST_MIN_POSITION, ArmConstants.WRIST_MAX_POSITION));
         wristMotor.setControl(positionControl.withPosition(targetPosition));
         Logger.recordOutput("Arm/Target Wrist Position", targetPosition);
     }
