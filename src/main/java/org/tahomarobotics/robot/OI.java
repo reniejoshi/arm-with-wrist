@@ -37,6 +37,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import org.tahomarobotics.robot.arm.Arm;
+import org.tahomarobotics.robot.elevator.Elevator;
 import org.tinylog.Logger;
 
 import java.util.List;
@@ -46,6 +47,7 @@ import java.util.function.Function;
 public class OI {
     // Subsystems
     private final Arm arm;
+    private final Elevator elevator;
 
     // -- Constants --
 
@@ -62,6 +64,7 @@ public class OI {
         DriverStation.silenceJoystickConnectionWarning(true);
 
         this.arm = robotContainer.arm;
+        this.elevator = robotContainer.elevator;
 
         configureControllerBindings();
         configureLessImportantControllerBindings();
@@ -80,6 +83,15 @@ public class OI {
 
         // Moves wrist counterclockwise
         controller.leftTrigger().onTrue(arm.setWristPositionCounterclockwise());
+
+        // Moves elevator to top
+        controller.y().onTrue(elevator.moveToMaxPosition());
+
+        // Moves elevator to bottom
+        controller.a().onTrue(elevator.moveToMinPosition());
+
+        // Toggle continuous vs discrete mode
+        controller.b().onTrue(elevator.toggleMode());
     }
 
     public void configureLessImportantControllerBindings() {

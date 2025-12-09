@@ -20,16 +20,37 @@
  * THE SOFTWARE.
  */
 
-package org.tahomarobotics.robot;
+package org.tahomarobotics.robot.elevator;
 
-import edu.wpi.first.math.geometry.Translation2d;
+import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.hardware.TalonFX;
+import org.tahomarobotics.robot.RobotMap;
+import org.tahomarobotics.robot.util.AbstractSubsystem;
 
-public final class RobotMap {
-    public final static int PIGEON = 0; // Internal IMU. Will not be used in Extra Programming Projects (Robot)
+public class ElevatorSubsystem extends AbstractSubsystem {
+    // Motors
+    private final TalonFX leftMotor = new TalonFX(RobotMap.ELEVATOR_LEFT_MOTOR);
+    private final TalonFX rightMotor = new TalonFX(RobotMap.ELEVATOR_RIGHT_MOTOR);
 
-    public final static int ARM_MOTOR = 1;
-    public final static int WRIST_MOTOR = 2;
+    ElevatorSubsystem() {
+        rightMotor.setControl(new Follower(RobotMap.ELEVATOR_LEFT_MOTOR, true));
+    }
 
-    public final static int ELEVATOR_LEFT_MOTOR = 3;
-    public final static int ELEVATOR_RIGHT_MOTOR = 4;
+    // Setters
+    public void moveToMinPosition() {
+
+    }
+
+    public void moveToMaxPosition() {
+
+    }
+
+    public void toggleMode() {
+
+    }
+
+    @Override
+    public void subsystemPeriodic() {
+
+    }
 }
