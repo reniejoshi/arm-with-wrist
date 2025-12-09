@@ -24,6 +24,7 @@ package org.tahomarobotics.robot.elevator;
 
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
+import org.littletonrobotics.junction.Logger;
 import org.tahomarobotics.robot.RobotMap;
 import org.tahomarobotics.robot.util.AbstractSubsystem;
 
@@ -31,6 +32,9 @@ public class ElevatorSubsystem extends AbstractSubsystem {
     // Motors
     private final TalonFX leftMotor = new TalonFX(RobotMap.ELEVATOR_LEFT_MOTOR);
     private final TalonFX rightMotor = new TalonFX(RobotMap.ELEVATOR_RIGHT_MOTOR);
+
+    // States
+    private Mode mode = Mode.DISCRETE;
 
     ElevatorSubsystem() {
         rightMotor.setControl(new Follower(RobotMap.ELEVATOR_LEFT_MOTOR, true));
@@ -46,11 +50,16 @@ public class ElevatorSubsystem extends AbstractSubsystem {
     }
 
     public void toggleMode() {
-
+        mode = (mode == Mode.DISCRETE) ? Mode.CONTINUOUS : Mode.DISCRETE;
     }
 
     @Override
     public void subsystemPeriodic() {
+        Logger.recordOutput("Elevator/Mode", mode);
+    }
 
+    enum Mode {
+        CONTINUOUS,
+        DISCRETE
     }
 }
